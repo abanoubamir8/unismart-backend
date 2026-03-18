@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
-const authController = require('./controllers/authController');
+const routes = require('./routes');
+const errorHandler = require('./exceptions/errorHandler');
 
 const app = express();
 
@@ -13,7 +14,9 @@ app.get('/', (req, res) => {
   res.status(200).send('API is up and running!');
 });
 
-app.post('/auth/login', authController.login);
+app.use('/', routes);
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 

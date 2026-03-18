@@ -1,19 +1,22 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../lib/db/sequelize');
 
-const Session = sequelize.define('Session', {
+const Grade = sequelize.define('Grade', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },
-  session_id: {
+  grade: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+  },
+  points: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
   },
 }, {
   timestamps: false
 });
 
-module.exports = Session;
+module.exports = Grade;

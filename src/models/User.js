@@ -11,11 +11,11 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  type: {
-    type: DataTypes.ENUM('staff', 'student'),
-    allowNull: false,
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
-  nationalId: {
+  national_id: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
@@ -23,6 +23,20 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  role: {
+    type: DataTypes.ENUM('student', 'staff', 'admin'),
+    allowNull: false,
+  },
+  level: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 1,
+  },
+  gpa: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0.0,
   },
 }, {
   timestamps: false
