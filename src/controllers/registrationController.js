@@ -1,22 +1,45 @@
 const registrationService = require('../services/registrationService');
+const authService = require('../services/authService');
 const AppError = require('../exceptions/AppError');
 
-async function enroll(req, res, next) {
+const getSuggestions = async (req, res, next) => {
   try {
-    const { courseIds, semester, academic_year } = req.body;
-    if (!semester || !academic_year) {
-      throw new AppError('Missing semester or academic_year', 400);
-    }
-    const enrollments = await registrationService.enroll(req.user, courseIds, semester, academic_year);
-    res.status(201).json({
-      message: 'Enrollment successful',
-      data: enrollments
+    const studentId = authService.mockSessions.get(req.sessionId);
+    if (!studentId) throw new AppError('Invalid session', 401);
+
+    const suggestions = registrationService.suggestCourses(studentId);
+    
+    res.status(200).json({
+      success: true,
+      data: suggestions
     });
   } catch (error) {
     next(error);
   }
-}
+};
+
+const register = async (req, res, next) => {
+  try {
+    const studentId = authService.mockSessions.get(req.sessionId);
+    if (!studentId) throw new AppError('Invalid session', 401);
+
+    const { courses } = req.body;
+    if (!courses || !Array.isArray(courses)) {
+      throw new AppError('A valid courses array is required', 400);
+    }
+
+    const registered = registrationService.registerForCourses(studentId, courses);
+
+    res.status(200).json({
+      success: true,
+      data: registered
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
-  enroll,
+  getSuggestions,
+  register
 };

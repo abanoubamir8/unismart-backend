@@ -1,20 +1,24 @@
 const authService = require('../services/authService');
-const AppError = require('../exceptions/AppError');
 
-async function login(req, res, next) {
+const login = async (req, res, next) => {
   try {
     const { national_id, password } = req.body;
+    
     if (!national_id || !password) {
-      throw new AppError('Missing national_id or password', 400);
+      return res.status(400).json({ success: false, error: 'national_id and password are required' });
     }
 
-    const result = await authService.login(national_id, password);
-    res.json(result);
+    const data = await authService.login(national_id, password);
+
+    res.status(200).json({
+      success: true,
+      data
+    });
   } catch (error) {
     next(error);
   }
-}
+};
 
 module.exports = {
-  login,
+  login
 };
