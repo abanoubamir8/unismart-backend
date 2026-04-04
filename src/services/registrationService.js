@@ -1,8 +1,15 @@
 const AppError = require('../exceptions/AppError');
 
 const mockStudents = [
-  { student_id: 1, name: 'Alice', gpa: 3.5, passed_courses: ['CS101', 'MATH101'], registered_courses: [] },
-  { student_id: 2, name: 'Bob', gpa: 2.5, passed_courses: [], registered_courses: [] }
+  {
+    student_id: "2026001",
+    password: "123",
+    name: 'Abanoub Amir',
+    gpa: 3.4,
+    department: 'CS',
+    passed_courses: ['UNV112', 'UNV113', 'BS111', 'CS111', 'CS112', 'CS212', 'IS111'],
+    registered_courses: []
+  }
 ];
 
 const mockCourses = [
