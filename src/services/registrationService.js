@@ -1,4 +1,4 @@
-const AppError = require('../exceptions/AppError');
+// const AppError = require('../exceptions/AppError');
 
 const mockStudents = [
   {
