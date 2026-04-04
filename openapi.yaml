@@ -1,0 +1,125 @@
+openapi: 3.0.0
+info:
+  title: UniSmart Backend API
+  description: |
+    Official API for the UniSmart Web Portal. 
+    Handles Tanta University (FCI) 2024 Academic Bylaws including 
+    GPA-based credit limits and course prerequisites.
+  version: 1.0.0
+  contact:
+    name: Muhammad Abdulqader
+
+servers:
+  - url: https://unismart-backend.vercel.app/api
+    description: Production Server (Vercel)
+
+paths:
+  /login:
+    post:
+      summary: Student Authentication
+      description: Validates university ID and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+                password:
+                  type: string
+                  example: "123"
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+
+  /courses/available:
+    post:
+      summary: Get Eligible Courses
+      description: Returns courses allowed by Tanta bylaws (Prerequisites & Academic Level).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                university_id:
+                  type: string
+      responses:
+        '200':
+          description: List of available courses returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+
+  /register-course:
+    post:
+      summary: Submit Course Registration
+      description: Validates GPA-based credit hour limits (12/15/18/21 brackets).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                university_id:
+                  type: string
+                requested_courses:
+                  type: array
+                  items:
+                    type: string
+                  example: ["CS311", "CS313"]
+                semesterType:
+                  type: string
+                  enum: [Regular, Summer]
+                isGraduating:
+                  type: boolean
+      responses:
+        '200':
+          description: Registration successful
+        '400':
+          description: Validation error (GPA limit or Missing Prerequisite)
+
+  /timetable:
+    post:
+      summary: View Weekly Schedule
+      description: Generates a timetable for currently registered courses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                university_id:
+                  type: string
+      responses:
+        '200':
+          description: Timetable generated successfully
+
+components:
+  schemas:
+    Course:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        credits:
+          type: integer
+        level:
+          type: integer
+        prerequisites:
+          type: array
+          items:
+            type: string
