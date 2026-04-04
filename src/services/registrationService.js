@@ -1,4 +1,10 @@
-// const AppError = require('../exceptions/AppError');
+class AppError extends Error {
+  constructor(message, statusCode, errorCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+  }
+}
 
 const mockStudents = [
   {
@@ -178,11 +184,11 @@ const validateCreditHours = (student, requestedCourses, semesterType = 'Regular'
   }
 
   if (totalCredits < minAllowed) {
-    return { valid: false, message: `Minimum required credit hours is ${minAllowed}. Total would be ${totalCredits}.` };
+    return { valid: false, errorCode: 'MIN_LOAD_FAIL', message: `You must register for at least ${minAllowed} credit hours.` };
   }
 
   if (totalCredits > maxAllowed) {
-    return { valid: false, message: `Maximum allowed credit hours exceeded. Your max is ${maxAllowed}, total would be ${totalCredits}.` };
+    return { valid: false, errorCode: 'GPA_LOAD_LIMIT_EXCEEDED', message: `Registration blocked. Your GPA is ${student.gpa}, which limits you to ${maxAllowed} credit hours.` };
   }
 
   return { valid: true, message: 'Credit hours are valid' };
@@ -191,12 +197,12 @@ const validateCreditHours = (student, requestedCourses, semesterType = 'Regular'
 const checkPrerequisites = (student, courseCode) => {
   const course = mockCourses.find(c => c.code === courseCode);
   if (!course) {
-    throw new AppError(`Course ${courseCode} not found`, 404);
+    throw new AppError(`Course ${courseCode} not found`, 404, 'COURSE_NOT_FOUND');
   }
 
   for (const prereq of course.prerequisites) {
     if (!student.passed_courses.includes(prereq)) {
-      return { valid: false, message: `Missing prerequisite ${prereq} for course ${courseCode}` };
+      return { valid: false, errorCode: 'PREREQUISITE_MISSING', message: `Cannot register for ${course.name}. You must pass ${prereq} first.` };
     }
   }
 
@@ -206,7 +212,7 @@ const checkPrerequisites = (student, courseCode) => {
 const suggestCourses = (studentId) => {
   const student = mockStudents.find(s => s.student_id === studentId);
   if (!student) {
-    throw new AppError('Student not found', 404);
+    throw new AppError('Student not found', 404, 'STUDENT_NOT_FOUND');
   }
 
   const passedCredits = student.passed_courses.reduce((sum, courseCode) => {
@@ -233,26 +239,41 @@ const suggestCourses = (studentId) => {
 const registerForCourses = (studentId, requestedCourses, semesterType = 'Regular', isGraduating = false) => {
   const student = mockStudents.find(s => s.student_id === studentId);
   if (!student) {
-    throw new AppError('Student not found', 404);
+    throw new AppError('Student not found', 404, 'STUDENT_NOT_FOUND');
   }
 
+  const passedCredits = student.passed_courses.reduce((sum, courseCode) => {
+    const course = mockCourses.find(c => c.code === courseCode);
+    return sum + (course ? course.credits : 0);
+  }, 0);
+  const studentLevel = calculateStudentLevel(passedCredits);
+
   for (const courseCode of requestedCourses) {
+    const course = mockCourses.find(c => c.code === courseCode);
+    if (!course) {
+      throw new AppError(`Course ${courseCode} not found`, 404, 'COURSE_NOT_FOUND');
+    }
+
     if (student.passed_courses.includes(courseCode)) {
-      throw new AppError(`Already passed course: ${courseCode}`, 400);
+      throw new AppError(`Already passed course: ${courseCode}`, 400, 'ALREADY_PASSED');
     }
     if (student.registered_courses.includes(courseCode)) {
-      throw new AppError(`Already registered for course: ${courseCode}`, 400);
+      throw new AppError(`Already registered for course: ${courseCode}`, 400, 'ALREADY_REGISTERED');
+    }
+
+    if (course.level > studentLevel) {
+      throw new AppError(`This course is Level ${course.level}. You are currently Level ${studentLevel}.`, 400, 'LEVEL_RESTRICTION');
     }
 
     const prereqCheck = checkPrerequisites(student, courseCode);
     if (!prereqCheck.valid) {
-      throw new AppError(prereqCheck.message, 400);
+      throw new AppError(prereqCheck.message, 400, prereqCheck.errorCode);
     }
   }
 
   const creditCheck = validateCreditHours(student, requestedCourses, semesterType, isGraduating);
   if (!creditCheck.valid) {
-    throw new AppError(creditCheck.message, 400);
+    throw new AppError(creditCheck.message, 400, creditCheck.errorCode);
   }
 
   student.registered_courses.push(...requestedCourses);
