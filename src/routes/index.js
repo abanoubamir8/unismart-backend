@@ -7,7 +7,7 @@ const {
     calculateStudentLevel,
     suggestCourses,
     registerForCourses
-} = require('../registrationService');
+} = require('./registrationService');
 
 router.post('/api/login', (req, res) => {
     const { university_id, password } = req.body;
