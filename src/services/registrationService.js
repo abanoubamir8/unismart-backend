@@ -261,6 +261,8 @@ const registerForCourses = (studentId, requestedCourses, semesterType = 'Regular
 };
 
 module.exports = {
+  mockStudents,
+  mockCourses,
   calculateStudentLevel,
   validateCreditHours,
   checkPrerequisites,
