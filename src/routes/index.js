@@ -2,44 +2,44 @@ const express = require('express');
 const router = express.Router();
 
 const mockCourses = [
-  { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
-  { code: 'CS111', name: 'Fundamentals of CS', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
-  { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona' },
-  { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
-  { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['IT212'], professor: 'Dr. Tarek' },
-  { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Hany' }
+    { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
+    { code: 'CS111', name: 'Fundamentals of CS', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
+    { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona' },
+    { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
+    { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['IT212'], professor: 'Dr. Tarek' },
+    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Hany' }
 ];
 
 const mockStudents = [
-  { 
-    student_id: "2026001", 
-    password: "123",
-    name: 'Muhammad Abdulqader',
-    email: 'm.abdulqader@university.edu',
-    gpa: 3.4, 
-    passed_hours: 30,
-    department: 'Computer Science',
-    registered_courses: ['CS311', 'CS313'],
-    academic_history: [
-      { course_code: 'CS111', semester: 'First 2024', grade: 90, recognition: 'A' },
-      { code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' },
-      { code: 'CS212', semester: 'First 2025', grade: 97, recognition: 'A+' }
-    ]
-  }
+    {
+        student_id: "2026001",
+        password: "123",
+        name: 'Abanoub Amir',
+        email: 'abanoubamir@university.edu',
+        gpa: 3.4,
+        passed_hours: 30,
+        department: 'Computer Science',
+        registered_courses: ['CS311', 'CS313'],
+        academic_history: [
+            { course_code: 'CS111', semester: 'First 2024', grade: 90, recognition: 'A' },
+            { code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' },
+            { code: 'CS212', semester: 'First 2025', grade: 97, recognition: 'A+' }
+        ]
+    }
 ];
 
 const calculateLevel = (hours) => {
-  if (hours < 28) return 1;
-  if (hours < 63) return 2;
-  if (hours < 98) return 3;
-  return 4;
+    if (hours < 28) return 1;
+    if (hours < 63) return 2;
+    if (hours < 98) return 3;
+    return 4;
 };
 
 const getGpaMaxHours = (gpa) => {
-  if (gpa < 1.0) return 12;
-  if (gpa >= 1.0 && gpa < 2.0) return 15;
-  if (gpa >= 2.0 && gpa < 3.0) return 18;
-  return 21;
+    if (gpa < 1.0) return 12;
+    if (gpa >= 1.0 && gpa < 2.0) return 15;
+    if (gpa >= 2.0 && gpa < 3.0) return 18;
+    return 21;
 };
 
 router.post('/api/login', (req, res) => {
@@ -75,7 +75,7 @@ router.post('/api/courses/available', (req, res) => {
         const suggested = mockCourses.filter(course => {
             if (passedCodes.includes(course.code)) return false;
             if (student.registered_courses.includes(course.code)) return false;
-            
+
             if (course.level > studentLevel) return false;
 
             for (const prereq of course.prerequisites) {
@@ -103,7 +103,7 @@ router.post('/api/register-course', (req, res) => {
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
-        
+
         const passedCodes = student.academic_history.map(h => h.course_code || h.code);
         const studentLevel = calculateLevel(student.passed_hours);
 
@@ -223,7 +223,7 @@ router.post('/api/dashboard', (req, res) => {
     }
 
     const available_hours = getGpaMaxHours(student.gpa);
-    
+
     const registered_courses_details = student.registered_courses.map(code => {
         const course = mockCourses.find(c => c.code === code);
         return {
