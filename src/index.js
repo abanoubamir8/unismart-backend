@@ -28,8 +28,6 @@ app.get('/api/db-check', async (req, res) => {
   }
 });
 
-app.options('*', cors());
-
 app.use('/', routes);
 
 app.use(errorMiddleware);
