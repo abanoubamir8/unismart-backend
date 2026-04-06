@@ -12,6 +12,37 @@ paths:
   /api/login:
     post:
       summary: Student Authentication
+      operationId: loginUser
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              example:
+                message: "Login successful"
+                token: "eyJhbG..."
+        '401':
+          description: Invalid credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+
+  /api/courses/available:
+    post:
+      summary: Get Eligible Courses
+      operationId: getAvailableCourses
+      responses:
+        '200':
+          description: List of available courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
       requestBody:
         required: true
         content:
@@ -22,71 +53,16 @@ paths:
                 university_id:
                   type: string
                   example: "2026001"
-                password:
-                  type: string
-                  example: "123"
-      responses:
-        '200':
-          description: Login successful
-        '401':
-          description: Invalid credentials
-
-  /api/courses/available:
-    post:
-      summary: Get Eligible Courses
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                university_id:
-                  type: string
-      responses:
-        '200':
-          description: List of available courses
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    code:
-                      type: string
-                    name:
-                      type: string
-                    credits:
-                      type: integer
-                    level:
-                      type: integer
 
   /api/register-course:
     post:
       summary: Submit Course Registration
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                university_id:
-                  type: string
-                requested_courses:
-                  type: array
-                  items:
-                    type: string
+      operationId: registerCourse
       responses:
         '200':
           description: Registration successful
         '400':
           description: Validation error
-
-  /api/timetable:
-    post:
-      summary: View Weekly Schedule
       requestBody:
         required: true
         content:
@@ -96,6 +72,58 @@ paths:
               properties:
                 university_id:
                   type: string
+                  example: "2026001"
+                requested_courses:
+                  type: array
+                  items:
+                    type: string
+                  example: ["CS101", "MATH202"]
+
+  /api/timetable:
+    post:
+      summary: View Weekly Schedule
+      operationId: getTimetable
       responses:
         '200':
           description: Timetable generated successfully
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - university_id
+        - password
+      properties:
+        university_id:
+          type: string
+          example: "2026001"
+        password:
+          type: string
+          example: "123"
+    
+    Course:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "CS101"
+        name:
+          type: string
+          example: "Introduction to Computer Science"
+        credits:
+          type: integer
+          example: 3
+        level:
+          type: integer
+          example: 1
