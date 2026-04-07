@@ -13,6 +13,12 @@ paths:
     post:
       summary: Student Authentication
       operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
           description: Login successful
@@ -23,26 +29,11 @@ paths:
                 token: "eyJhbG..."
         '401':
           description: Invalid credentials
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
 
   /api/courses/available:
     post:
       summary: Get Eligible Courses
       operationId: getAvailableCourses
-      responses:
-        '200':
-          description: List of available courses
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Course'
       requestBody:
         required: true
         content:
@@ -53,16 +44,20 @@ paths:
                 university_id:
                   type: string
                   example: "2026001"
+      responses:
+        '200':
+          description: List of available courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
 
   /api/register-course:
     post:
       summary: Submit Course Registration
       operationId: registerCourse
-      responses:
-        '200':
-          description: Registration successful
-        '400':
-          description: Validation error
       requestBody:
         required: true
         content:
@@ -78,14 +73,16 @@ paths:
                   items:
                     type: string
                   example: ["CS101", "MATH202"]
+      responses:
+        '200':
+          description: Registration successful
+        '400':
+          description: Validation error
 
   /api/timetable:
     post:
       summary: View Weekly Schedule
       operationId: getTimetable
-      responses:
-        '200':
-          description: Timetable generated successfully
       requestBody:
         required: true
         content:
@@ -96,6 +93,9 @@ paths:
                 university_id:
                   type: string
                   example: "2026001"
+      responses:
+        '200':
+          description: Timetable generated successfully
 
 components:
   schemas:
