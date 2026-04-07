@@ -1,16 +1,19 @@
 openapi: 3.0.0
 info:
   title: UniSmart Backend API
-  description: Official API for UniSmart Web Portal.
+  description: Official API for UniSmart Web Portal (Antigravity Project).
   version: 1.0.0
 
 servers:
   - url: https://unismart-backend-one.vercel.app
-    description: Vercel Production Server (Updated)
+    description: Vercel Production Server
 
 paths:
+  # --- Existing Login ---
   /api/login:
     post:
+      tags:
+        - Auth
       summary: Student Authentication
       operationId: loginUser
       requestBody:
@@ -22,16 +25,14 @@ paths:
       responses:
         '200':
           description: Login successful
-          content:
-            application/json:
-              example:
-                message: "Login successful"
-                token: "eyJhbG..."
         '401':
           description: Invalid credentials
 
+  # --- Existing Courses Available ---
   /api/courses/available:
     post:
+      tags:
+        - Courses
       summary: Get Eligible Courses
       operationId: getAvailableCourses
       requestBody:
@@ -54,8 +55,11 @@ paths:
                 items:
                   $ref: '#/components/schemas/Course'
 
+  # --- Existing Register Course ---
   /api/register-course:
     post:
+      tags:
+        - Courses
       summary: Submit Course Registration
       operationId: registerCourse
       requestBody:
@@ -76,11 +80,48 @@ paths:
       responses:
         '200':
           description: Registration successful
-        '400':
-          description: Validation error
 
+  # --- NEW: Unregister/Drop Course ---
+  /api/unregister-course:
+    delete:
+      tags:
+        - Courses
+      summary: Drop a registered course
+      description: Deletes a course from student's record so it becomes available again.
+      operationId: dropCourse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
+                - course_code
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+                course_code:
+                  type: string
+                  example: "CS311"
+      responses:
+        '200':
+          description: Course dropped successfully
+          content:
+            application/json:
+              example:
+                message: "Course dropped successfully. It is now available for re-registration."
+        '400':
+          description: Missing required fields
+        '404':
+          description: Student or Course record not found
+
+  # --- Existing Timetable ---
   /api/timetable:
     post:
+      tags:
+        - Student
       summary: View Weekly Schedule
       operationId: getTimetable
       requestBody:
@@ -107,23 +148,17 @@ components:
       properties:
         university_id:
           type: string
-          example: "2026001"
         password:
           type: string
-          example: "123"
     
     Course:
       type: object
       properties:
         code:
           type: string
-          example: "CS101"
         name:
           type: string
-          example: "Introduction to Computer Science"
         credits:
           type: integer
-          example: 3
         level:
           type: integer
-          example: 1
