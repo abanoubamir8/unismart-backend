@@ -96,6 +96,7 @@ paths:
                 university_id:
                   type: string
                   example: "2026001"
+
 components:
   schemas:
     LoginRequest:
