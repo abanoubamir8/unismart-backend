@@ -76,7 +76,7 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["CS101", "MATH202"]
+                
       responses:
         '200':
           description: Registration successful
