@@ -6,7 +6,7 @@ info:
 
 servers:
   - url: https://unismart-backend-one.vercel.app
-    description: Vercel Production Server
+    description: Vercel Production Server (Updated)
 
 paths:
   /api/login:
