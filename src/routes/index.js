@@ -98,10 +98,14 @@ router.post('/api/courses/available', (req, res) => {
 
 router.post('/api/register-course', (req, res) => {
     try {
-        const { university_id, requested_courses, semesterType, isGraduating } = req.body;
+        const { university_id, requested_courses } = req.body;
         const student = mockStudents.find(s => s.student_id === university_id);
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        if (!Array.isArray(requested_courses)) {
+            return res.status(400).json({ success: false, message: 'requested_courses must be an array' });
         }
 
         const passedCodes = student.academic_history.map(h => h.course_code || h.code);
@@ -121,21 +125,36 @@ router.post('/api/register-course', (req, res) => {
             if (course.level > studentLevel) {
                 return res.status(400).json({ success: false, message: `This course is Level ${course.level}. You are currently Level ${studentLevel}.` });
             }
-            for (const prereq of course.prerequisites) {
-                if (!passedCodes.includes(prereq)) {
-                    return res.status(400).json({ success: false, message: `Cannot register for ${course.name}. You must pass ${prereq} first.` });
-                }
-            }
         }
 
         student.registered_courses.push(...requested_courses);
-        res.status(200).json({ message: "Courses registered successfully!", registered: student.registered_courses });
+        res.status(200).json(student.registered_courses);
     } catch (error) {
         res.status(400).json({
             success: false,
-            message: error.message,
-            errorCode: "UNKNOWN_ERROR"
+            message: error.message
         });
+    }
+});
+
+router.delete('/api/unregister-course', (req, res) => {
+    try {
+        const { university_id, course_code } = req.body;
+        const student = mockStudents.find(s => s.student_id === university_id);
+        
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        const courseIndex = student.registered_courses.indexOf(course_code);
+        if (courseIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Course is not in your current registration list' });
+        }
+
+        student.registered_courses.splice(courseIndex, 1);
+        res.status(200).json({ success: true, message: 'Course unregistered successfully' });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
 });
 
