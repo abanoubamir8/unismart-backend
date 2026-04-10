@@ -160,7 +160,7 @@ router.post('/api/register-course', (req, res) => {
     }
 });
 
-router.delete('/api/unregister-course', (req, res) => {
+router.post('/api/unregister-course', (req, res) => {
     try {
         const { university_id, course_code } = req.body;
         const student = mockStudents.find(s => s.student_id === university_id);
