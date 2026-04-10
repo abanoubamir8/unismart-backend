@@ -2,27 +2,119 @@ const express = require('express');
 const router = express.Router();
 
 const mockCourses = [
+    // Level 1
     { code: 'CS111', name: 'Fundamentals of Computer Science', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
     { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona' },
+    { code: 'BS111', name: 'Math 1', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Ayman' },
+    { code: 'BS113', name: 'Math 2', credits: 3, level: 1, prerequisites: ['BS111'], professor: 'Dr. Ayman' },
+    { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
+    
+    // Level 2
     { code: 'CS211', name: 'Object Oriented Programming', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Yasser' },
     { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
-    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Hany' },
-    { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS211'], professor: 'Dr. Tarek' }
+    { code: 'IS211', name: 'Introduction to Database Systems', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Noha' },
+    { code: 'SE211', name: 'Introduction to Software Engineering', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Rania' },
+    { code: 'BS211', name: 'Math 3', credits: 3, level: 2, prerequisites: ['BS113'], professor: 'Dr. Samy' },
+    
+    // Level 3
+    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212', 'BS113'], professor: 'Dr. Hany' },
+    { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS313'], professor: 'Dr. Tarek' },
+    { code: 'SE311', name: 'Advanced Software Engineering', credits: 3, level: 3, prerequisites: ['SE211', 'CS211'], professor: 'Dr. Rania' },
+    { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Tarek' },
+    
+    // Level 4
+    { code: 'CS414', name: 'Data Science', credits: 3, level: 4, prerequisites: ['CS314'], professor: 'Dr. Yasser' },
+    { code: 'CS415', name: 'Cloud Computing', credits: 3, level: 4, prerequisites: ['CS311'], professor: 'Dr. Osama' },
+    { code: 'PR411', name: 'Graduation Project 1', credits: 3, level: 4, prerequisites: [], professor: 'Dr. Mona' },
+    { code: 'PR412', name: 'Graduation Project 2', credits: 3, level: 4, prerequisites: ['PR411'], professor: 'Dr. Hany' }
 ];
 
 const mockStudents = [
     {
+        // Student 1 (The Freshman)
+        student_id: "2026101",
+        password: "123",
+        name: 'Ahmed Freshman',
+        email: 'ahmed@university.edu',
+        gpa: 0.0,
+        passed_hours: 0,
+        department: 'General',
+        registered_courses: [],
+        academic_history: []
+    },
+    {
+        // Student 2 (The Junior - Abanoub)
         student_id: "2026001",
         password: "123",
         name: 'Abanoub Amir',
         email: 'abanoubamir@university.edu',
         gpa: 3.4,
-        passed_hours: 65, // Level 3 threshold so level constraints don't hide prerequisite blocks
+        passed_hours: 65, // Level 3 threshold
         department: 'Computer Science',
-        registered_courses: ['CS212'],
+        registered_courses: ['SE311', 'CS313'],
         academic_history: [
             { course_code: 'CS111', semester: 'First 2024', grade: 90, recognition: 'A' },
-            { course_code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' }
+            { course_code: 'BS111', semester: 'First 2024', grade: 80, recognition: 'B' },
+            { course_code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' },
+            { course_code: 'BS113', semester: 'Second 2024', grade: 88, recognition: 'B+' },
+            { course_code: 'CS212', semester: 'First 2025', grade: 92, recognition: 'A-' },
+            { course_code: 'CS211', semester: 'First 2025', grade: 89, recognition: 'B+' },
+            { course_code: 'SE211', semester: 'Second 2025', grade: 85, recognition: 'B+' }
+        ]
+    },
+    {
+        // Student 3 (The Senior)
+        student_id: "2026901",
+        password: "123",
+        name: 'Sara Senior',
+        email: 'sara@university.edu',
+        gpa: 3.9,
+        passed_hours: 105, // Level 4 threshold
+        department: 'Computer Science',
+        registered_courses: ['CS414', 'PR412'],
+        academic_history: [
+            { course_code: 'CS111', semester: 'First 2022', grade: 95, recognition: 'A' },
+            { course_code: 'CS112', semester: 'Second 2022', grade: 98, recognition: 'A+' },
+            { course_code: 'BS111', semester: 'First 2022', grade: 95, recognition: 'A' },
+            { course_code: 'BS113', semester: 'Second 2022', grade: 90, recognition: 'A-' },
+            { course_code: 'CS212', semester: 'First 2023', grade: 96, recognition: 'A' },
+            { course_code: 'CS211', semester: 'First 2023', grade: 97, recognition: 'A+' },
+            { course_code: 'CS313', semester: 'Second 2023', grade: 99, recognition: 'A+' },
+            { course_code: 'CS314', semester: 'First 2024', grade: 100, recognition: 'A+' },
+            { course_code: 'PR411', semester: 'First 2025', grade: 95, recognition: 'A' }
+        ]
+    },
+    {
+        // Student 4 (The Probation Student)
+        student_id: "2026404",
+        password: "123",
+        name: 'Kareem Probation',
+        email: 'kareem@university.edu',
+        gpa: 1.5,
+        passed_hours: 45, // Level 2
+        department: 'Computer Science',
+        registered_courses: ['IS211'],
+        academic_history: [
+            { course_code: 'CS111', semester: 'First 2024', grade: 65, recognition: 'D' },
+            { course_code: 'CS112', semester: 'Second 2024', grade: 60, recognition: 'D' }
+        ]
+    },
+    {
+        // Student 5 (The Missing Prereq)
+        student_id: "2026505",
+        password: "123",
+        name: 'Mona Missing',
+        email: 'mona@university.edu',
+        gpa: 2.8,
+        passed_hours: 90, // Level 3
+        department: 'Computer Science',
+        registered_courses: [],
+        academic_history: [
+            { course_code: 'CS111', semester: 'First 2023', grade: 90, recognition: 'A' },
+            { course_code: 'CS112', semester: 'Second 2023', grade: 85, recognition: 'B+' },
+            { course_code: 'CS211', semester: 'First 2024', grade: 85, recognition: 'B+' },
+            { course_code: 'BS111', semester: 'First 2024', grade: 80, recognition: 'B' },
+            { course_code: 'BS113', semester: 'Second 2024', grade: 88, recognition: 'B+' }
         ]
     }
 ];
