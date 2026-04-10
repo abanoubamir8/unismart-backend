@@ -16,8 +16,6 @@ async function dropStudentCourse(university_id, course_code) {
   }
 }
 
-// Added placeholder since courseController.js expects this function.
-// Replace with your actual implementation if you already have one.
 async function getAvailableCourses(studentId, studentLevel) {
   return [];
 }

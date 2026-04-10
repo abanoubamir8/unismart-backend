@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const mockCourses = [
-    { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
-    { code: 'CS111', name: 'Fundamentals of CS', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
+    { code: 'CS111', name: 'Fundamentals of Computer Science', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
     { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona' },
+    { code: 'CS211', name: 'Object Oriented Programming', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Yasser' },
     { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
-    { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['IT212'], professor: 'Dr. Tarek' },
-    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Hany' }
+    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Hany' },
+    { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS211'], professor: 'Dr. Tarek' }
 ];
 
 const mockStudents = [
@@ -17,13 +17,12 @@ const mockStudents = [
         name: 'Abanoub Amir',
         email: 'abanoubamir@university.edu',
         gpa: 3.4,
-        passed_hours: 30,
+        passed_hours: 65, // Level 3 threshold so level constraints don't hide prerequisite blocks
         department: 'Computer Science',
-        registered_courses: ['CS311', 'CS313'],
+        registered_courses: ['CS212'],
         academic_history: [
             { course_code: 'CS111', semester: 'First 2024', grade: 90, recognition: 'A' },
-            { code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' },
-            { code: 'CS212', semester: 'First 2025', grade: 97, recognition: 'A+' }
+            { course_code: 'CS112', semester: 'Second 2024', grade: 85, recognition: 'B+' }
         ]
     }
 ];
@@ -72,19 +71,32 @@ router.post('/api/courses/available', (req, res) => {
         const passedCodes = student.academic_history.map(h => h.course_code || h.code);
         const studentLevel = calculateLevel(student.passed_hours);
 
-        const suggested = mockCourses.filter(course => {
-            if (passedCodes.includes(course.code)) return false;
-            if (student.registered_courses.includes(course.code)) return false;
+        const suggested = mockCourses.map(course => {
+            if (passedCodes.includes(course.code)) return null;
+            if (student.registered_courses.includes(course.code)) return null;
 
-            if (course.level > studentLevel) return false;
+            let isLocked = false;
+            let lockReason = null;
+
+            if (course.level > studentLevel) {
+                isLocked = true;
+                lockReason = `Semester Level ${course.level} Required`;
+            }
 
             for (const prereq of course.prerequisites) {
                 if (!passedCodes.includes(prereq)) {
-                    return false;
+                    isLocked = true;
+                    lockReason = `Prerequisite Missing: ${prereq}`;
+                    break;
                 }
             }
-            return true;
-        });
+            
+            return {
+                ...course,
+                is_locked: isLocked,
+                lock_reason: lockReason
+            };
+        }).filter(course => course !== null);
 
         res.status(200).json(suggested);
     } catch (error) {
@@ -124,6 +136,17 @@ router.post('/api/register-course', (req, res) => {
             }
             if (course.level > studentLevel) {
                 return res.status(400).json({ success: false, message: `This course is Level ${course.level}. You are currently Level ${studentLevel}.` });
+            }
+
+            // Strictly check prerequisites
+            for (const prereq of course.prerequisites) {
+                if (!passedCodes.includes(prereq)) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Prerequisite missing: You must pass ${prereq} before registering for ${courseCode}.`,
+                        errorCode: "PREREQUISITE_MISSING"
+                    });
+                }
             }
         }
 
