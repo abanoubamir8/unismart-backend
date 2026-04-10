@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: UniSmart Backend API
-  description: Official API documentation for the Antigravity Graduation Project. Optimized for rest.wiki interactive requests.
+  description: Official API documentation for the Antigravity Graduation Project. Synced perfectly with the 2024 Tanta CS Mock Database.
   version: 1.0.0
 servers:
   - url: https://unismart-backend-one.vercel.app
@@ -34,10 +34,24 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
                 password:
                   type: string
-                  example: "123"
+            examples:
+              Freshman:
+                summary: "Ahmed (The Freshman)"
+                value:
+                  university_id: "2026101"
+                  password: "123"
+              Junior:
+                summary: "Abanoub (The Junior)"
+                value:
+                  university_id: "2026001"
+                  password: "123"
+              Senior:
+                summary: "Sara (The Senior)"
+                value:
+                  university_id: "2026901"
+                  password: "123"
       responses:
         '200':
           description: Login successful
@@ -48,22 +62,17 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Login successful"
                   student:
                     type: object
                     properties:
                       name:
                         type: string
-                        example: "Abanoub Amir"
                       gpa:
                         type: number
-                        example: 3.4
                       department:
                         type: string
-                        example: "Computer Science"
                   token:
                     type: string
-                    example: "fake-jwt-token"
         '401':
           description: Invalid credentials
           content:
@@ -76,7 +85,7 @@ paths:
       tags:
         - Courses
       summary: Get available courses for student
-      description: Returns a list of courses the student can register for, including courses locked by unmet prerequisites.
+      description: Returns a list of courses the student can register for, including courses explicitly locked by unmet prerequisites based on Tanta Bylaws.
       requestBody:
         required: true
         content:
@@ -88,10 +97,22 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
+            examples:
+              Freshman:
+                summary: "Ahmed (The Freshman - Empty Slate)"
+                value:
+                  university_id: "2026101"
+              Junior:
+                summary: "Abanoub (The Junior - Complex Prerequisites)"
+                value:
+                  university_id: "2026001"
+              MissingPrereq:
+                summary: "Mona (Level 3 but missing CS212)"
+                value:
+                  university_id: "2026505"
       responses:
         '200':
-          description: Exact JSON list of available and locked courses based on current mocking logic
+          description: JSON list of available and locked courses
           content:
             application/json:
               schema:
@@ -116,7 +137,7 @@ paths:
       tags:
         - Courses
       summary: Register for courses
-      description: Allows a student to register for an array of courses. Strictly enforces prerequisites.
+      description: Allows a student to register for an array of courses. Strictly enforces multi-tier prerequisites and level thresholds.
       requestBody:
         required: true
         content:
@@ -129,28 +150,68 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
                 requested_courses:
                   type: array
                   items:
                     type: string
-                  example: ["CS313"]
+            examples:
+              FreshmanSuccess:
+                summary: "Freshman Registering (Success)"
+                value:
+                  university_id: "2026101"
+                  requested_courses: ["CS111"]
+              JuniorMissingPrereq:
+                summary: "Junior Missing Prereq (Error 400)"
+                value:
+                  university_id: "2026001"
+                  requested_courses: ["CS314"]
+              SeniorAlreadyPassed:
+                summary: "Senior Already Passed (Error 400)"
+                value:
+                  university_id: "2026901"
+                  requested_courses: ["CS111"]
+              ProbationAlreadyRegistered:
+                summary: "Probation Double Register (Error 400)"
+                value:
+                  university_id: "2026404"
+                  requested_courses: ["IS211"]
       responses:
         '200':
-          description: Successfully registered courses. Returns the updated array of registered course codes.
+          description: Successfully registered courses. Returns updated array.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   type: string
-                example: ["CS212", "CS313"]
         '400':
-          description: Registration failed (missing prerequisite, level restricted, etc.)
+          description: Registration failed (missing prerequisite, already registered, etc)
           content:
             application/json:
                schema:
                  $ref: '#/components/schemas/ErrorResponse'
+               examples:
+                 PrerequisiteMissing:
+                   summary: "Prerequisite Missing Error"
+                   value:
+                     success: false
+                     message: "Prerequisite missing: You must pass CS313 before registering for CS314."
+                     errorCode: "PREREQUISITE_MISSING"
+                 AlreadyRegistered:
+                   summary: "Already Registered Error"
+                   value:
+                     success: false
+                     message: "Already registered for course: IS211"
+                 AlreadyPassed:
+                   summary: "Already Passed Error"
+                   value:
+                     success: false
+                     message: "Already passed course: CS111"
+                 LevelRestricted:
+                   summary: "Level Restricted Error"
+                   value:
+                     success: false
+                     message: "This course is Level 2. You are currently Level 1."
         '404':
           description: Student or course not found
           content:
@@ -163,7 +224,7 @@ paths:
       tags:
         - Courses
       summary: Unregister a course
-      description: Removes a course from the student's currently registered courses list (Refactored to POST for rest.wiki support).
+      description: Removes a course from the student's currently registered courses list.
       requestBody:
         required: true
         content:
@@ -176,10 +237,19 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
                 course_code:
                   type: string
-                  example: "CS212"
+            examples:
+              JuniorUnregister:
+                summary: "Abanoub safely dropping Advanced SE"
+                value:
+                  university_id: "2026001"
+                  course_code: "SE311"
+              SeniorUnregister:
+                summary: "Sara safely dropping Data Science"
+                value:
+                  university_id: "2026901"
+                  course_code: "CS414"
       responses:
         '200':
           description: Course unregistered successfully
@@ -190,10 +260,8 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: "Course unregistered successfully"
         '400':
           description: Bad request
           content:
@@ -201,57 +269,7 @@ paths:
                schema:
                  $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Student not found or course not in registration list
-          content:
-            application/json:
-               schema:
-                 $ref: '#/components/schemas/ErrorResponse'
-
-  /api/timetable:
-    post:
-      tags:
-        - Student
-      summary: Get student timetable
-      description: Returns the weekly schedule for the student's registered courses.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - university_id
-              properties:
-                university_id:
-                  type: string
-                  example: "2026001"
-      responses:
-        '200':
-          description: Timetable data array
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    course_code:
-                      type: string
-                      example: "CS212"
-                    course_name:
-                      type: string
-                      example: "Data Structures"
-                    day:
-                      type: string
-                      example: "Sunday"
-                    time:
-                      type: string
-                      example: "10:00 AM - 12:00 PM"
-                    location:
-                      type: string
-                      example: "Lab 1"
-        '404':
-          description: Student not found
+          description: Student not found or course not in list
           content:
             application/json:
                schema:
@@ -274,7 +292,15 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
+            examples:
+              Freshman:
+                summary: "Ahmed (Year 1 Profile)"
+                value:
+                  university_id: "2026101"
+              Senior:
+                summary: "Sara (Year 4 Profile)"
+                value:
+                  university_id: "2026901"
       responses:
         '200':
           description: Student profile retrieved successfully
@@ -282,6 +308,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StudentProfile'
+        '404':
+          description: Student not found
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dashboard:
+    post:
+      tags:
+        - Student
+      summary: Get dashboard statistics
+      description: Retrieves aggregated data for the dashboard. Perfect for showing warning states.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
+              properties:
+                university_id:
+                  type: string
+            examples:
+              Junior:
+                summary: "Abanoub (Healthy GPA Stats)"
+                value:
+                  university_id: "2026001"
+              Probation:
+                summary: "Kareem (Academic Warning & Restricted Hours)"
+                value:
+                  university_id: "2026404"
+      responses:
+        '200':
+          description: Dashboard summary data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gpa:
+                    type: number
+                  available_hours:
+                    type: number
+                  passed_hours:
+                    type: number
+                  registered_courses_count:
+                    type: integer
+                  registered_courses_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        course_name:
+                          type: string
+                        hours:
+                          type: integer
+                        professor:
+                          type: string
+                        action:
+                          type: string
         '404':
           description: Student not found
           content:
@@ -306,7 +396,15 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
+            examples:
+              Senior:
+                summary: "Sara (Full Senior Transcript)"
+                value:
+                  university_id: "2026901"
+              Freshman:
+                summary: "Ahmed (Empty History)"
+                value:
+                  university_id: "2026101"
       responses:
         '200':
           description: Academic grades history array
@@ -323,12 +421,12 @@ paths:
                schema:
                  $ref: '#/components/schemas/ErrorResponse'
 
-  /api/dashboard:
+  /api/timetable:
     post:
       tags:
         - Student
-      summary: Get dashboard statistics
-      description: Retrieves aggregated data for the dashboard (e.g., GPA, available hours, registered courses detail objects).
+      summary: Get student timetable
+      description: Returns the weekly schedule for the student's registered courses.
       requestBody:
         required: true
         content:
@@ -340,47 +438,31 @@ paths:
               properties:
                 university_id:
                   type: string
-                  example: "2026001"
+            examples:
+              Junior:
+                summary: "Abanoub (Schedule Preview)"
+                value:
+                  university_id: "2026001"
       responses:
         '200':
-          description: Dashboard summary data
+          description: Timetable data array
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  gpa:
-                    type: number
-                    example: 3.4
-                  available_hours:
-                    type: number
-                    example: 21
-                  passed_hours:
-                    type: number
-                    example: 65
-                  registered_courses_count:
-                    type: integer
-                    example: 1
-                  registered_courses_details:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        code:
-                          type: string
-                          example: "CS212"
-                        course_name:
-                          type: string
-                          example: "Data Structures"
-                        hours:
-                          type: integer
-                          example: 3
-                        professor:
-                          type: string
-                          example: "Dr. Osama"
-                        action:
-                          type: string
-                          example: "Delete"
+                type: array
+                items:
+                  type: object
+                  properties:
+                    course_code:
+                      type: string
+                    course_name:
+                      type: string
+                    day:
+                      type: string
+                    time:
+                      type: string
+                    location:
+                      type: string
         '404':
           description: Student not found
           content:
@@ -409,55 +491,55 @@ components:
           type: array
           items:
             type: string
-          example: ["CS211"]
+          example: ["CS313"]
         professor:
           type: string
           example: "Dr. Tarek"
         is_locked:
           type: boolean
-          example: false
+          example: true
         lock_reason:
           type: string
           nullable: true
-          example: null
+          example: "Prerequisite Missing: CS313"
 
     StudentProfile:
       type: object
       properties:
         name:
           type: string
-          example: "Abanoub Amir"
+          example: "Sara Senior"
         email:
           type: string
-          example: "abanoubamir@university.edu"
+          example: "sara@university.edu"
         year_of_study:
           type: string
-          example: "Third Year"
+          example: "Fourth Year"
         department:
           type: string
           example: "Computer Science"
         student_id:
           type: string
-          example: "2026001"
+          example: "2026901"
         gpa:
           type: number
-          example: 3.4
+          example: 3.9
 
     GradeItem:
       type: object
       properties:
         course_name:
           type: string
-          example: "Structured Programming"
+          example: "Object Oriented Programming"
         semester:
           type: string
-          example: "Second 2024"
+          example: "First 2023"
         grade:
           type: number
-          example: 85
+          example: 97
         recognition:
           type: string
-          example: "B+"
+          example: "A+"
 
     ErrorResponse:
       type: object
@@ -467,7 +549,7 @@ components:
           example: false
         message:
           type: string
-          example: "Prerequisite missing: You must pass CS211 before registering for CS314."
+          example: "Detailed error message describing the failure."
         errorCode:
           type: string
           example: "PREREQUISITE_MISSING"
