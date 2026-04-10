@@ -1,11 +1,12 @@
 openapi: 3.0.0
 info:
   title: UniSmart Backend API
-  description: Official API documentation for the Antigravity Graduation Project
+  description: Official API documentation for the Antigravity Graduation Project. Optimized for rest.wiki interactive requests.
   version: 1.0.0
 servers:
   - url: https://unismart-backend-one.vercel.app
     description: Production Server
+
 tags:
   - name: Auth
     description: Authentication endpoints
@@ -13,6 +14,7 @@ tags:
     description: Course registration and catalog endpoints
   - name: Student
     description: Student profile, grades, and dashboard endpoints
+
 paths:
   /api/login:
     post:
@@ -74,7 +76,7 @@ paths:
       tags:
         - Courses
       summary: Get available courses for student
-      description: Returns a list of courses the student can register for, including those locked by unmet prerequisites.
+      description: Returns a list of courses the student can register for, including courses locked by unmet prerequisites.
       requestBody:
         required: true
         content:
@@ -89,7 +91,7 @@ paths:
                   example: "2026001"
       responses:
         '200':
-          description: List of available and locked courses
+          description: Exact JSON list of available and locked courses based on current mocking logic
           content:
             application/json:
               schema:
@@ -114,7 +116,7 @@ paths:
       tags:
         - Courses
       summary: Register for courses
-      description: Allows a student to register for an array of courses. Enforces prerequisites and level limitations.
+      description: Allows a student to register for an array of courses. Strictly enforces prerequisites.
       requestBody:
         required: true
         content:
@@ -132,19 +134,19 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["CS313", "CS314"]
+                  example: ["CS313"]
       responses:
         '200':
-          description: Successfully registered courses
+          description: Successfully registered courses. Returns the updated array of registered course codes.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   type: string
-                example: ["CS212", "CS313", "CS314"]
+                example: ["CS212", "CS313"]
         '400':
-          description: Registration failed (already passed, already registered, level restricted, or missing prerequisite)
+          description: Registration failed (missing prerequisite, level restricted, etc.)
           content:
             application/json:
                schema:
@@ -157,11 +159,11 @@ paths:
                  $ref: '#/components/schemas/ErrorResponse'
 
   /api/unregister-course:
-    delete:
+    post:
       tags:
         - Courses
       summary: Unregister a course
-      description: Removes a course from the student's currently registered courses list.
+      description: Removes a course from the student's currently registered courses list (Refactored to POST for rest.wiki support).
       requestBody:
         required: true
         content:
@@ -225,7 +227,7 @@ paths:
                   example: "2026001"
       responses:
         '200':
-          description: Timetable data
+          description: Timetable data array
           content:
             application/json:
               schema:
@@ -307,7 +309,7 @@ paths:
                   example: "2026001"
       responses:
         '200':
-          description: Academic grades history
+          description: Academic grades history array
           content:
             application/json:
               schema:
@@ -326,7 +328,7 @@ paths:
       tags:
         - Student
       summary: Get dashboard statistics
-      description: Retrieves aggregated data for the dashboard (e.g., GPA, available hours, registered courses).
+      description: Retrieves aggregated data for the dashboard (e.g., GPA, available hours, registered courses detail objects).
       requestBody:
         required: true
         content:
@@ -413,11 +415,11 @@ components:
           example: "Dr. Tarek"
         is_locked:
           type: boolean
-          example: true
+          example: false
         lock_reason:
           type: string
           nullable: true
-          example: "Prerequisite Missing: CS211"
+          example: null
 
     StudentProfile:
       type: object
@@ -465,7 +467,7 @@ components:
           example: false
         message:
           type: string
-          example: "Detailed error message describing the failure."
+          example: "Prerequisite missing: You must pass CS211 before registering for CS314."
         errorCode:
           type: string
           example: "PREREQUISITE_MISSING"
