@@ -85,7 +85,7 @@ paths:
       tags:
         - Courses
       summary: Get available courses for student
-      description: Returns a list of courses the student can register for, including courses explicitly locked by unmet prerequisites based on Tanta Bylaws.
+      description: Returns a list of courses the student can register for, including courses explicitly locked by unmet prerequisites based on Tanta Bylaws. Will not return courses already passed or currently registered.
       requestBody:
         required: true
         content:
@@ -224,7 +224,7 @@ paths:
       tags:
         - Courses
       summary: Unregister a course
-      description: Removes a course from the student's currently registered courses list.
+      description: Removes a course from the student's currently registered courses list and permanently mutates state for the session.
       requestBody:
         required: true
         content:
@@ -246,13 +246,13 @@ paths:
                   university_id: "2026001"
                   course_code: "SE311"
               SeniorUnregister:
-                summary: "Sara safely dropping Data Science"
+                summary: "Sara safely dropping Graduation Project"
                 value:
                   university_id: "2026901"
-                  course_code: "CS414"
+                  course_code: "PR412"
       responses:
         '200':
-          description: Course unregistered successfully
+          description: Course unregistered successfully. Returns the exact state of active registrations.
           content:
             application/json:
               schema:
@@ -260,8 +260,15 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Course removed"
+                  updated_registered_courses:
+                    type: array
+                    items:
+                      type: string
+                    example: ["CS313"]
         '400':
           description: Bad request
           content:
