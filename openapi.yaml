@@ -1,71 +1,98 @@
+Viewed index.js:1-289
+
+```yaml
 openapi: 3.0.0
 info:
   title: UniSmart Backend API
+  description: Official API documentation for the Antigravity Graduation Project
   version: 1.0.0
-  description: OpenAPI 3.0 specification for the UniSmart Express.js router endpoints.
 servers:
   - url: https://unismart-backend-one.vercel.app
     description: Production Server
-
 tags:
   - name: Auth
     description: Authentication endpoints
   - name: Courses
-    description: Course management, dropping, and registration
-  - name: Student Info
-    description: Student profile, dashboard, and grades endpoints
-
+    description: Course registration and catalog endpoints
+  - name: Student
+    description: Student profile, grades, and dashboard endpoints
 paths:
   /api/login:
     post:
       tags:
         - Auth
       summary: Student login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              example:
-                message: "Login successful"
-                student:
-                  name: "Abanoub Amir"
-                  gpa: 3.4
-                  department: "Computer Science"
-                token: "fake-jwt-token"
-        '401':
-          description: Invalid credentials
-          content:
-            application/json:
-              example:
-                success: false
-                message: "Invalid university ID or password"
-                errorCode: "INVALID_CREDENTIALS"
-
-  /api/courses/available:
-    post:
-      tags:
-        - Courses
-      summary: Get available courses for student
+      description: Authenticates a student using their university ID and password.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - university_id
+                - password
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+                password:
+                  type: string
+                  example: "123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  student:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: "Abanoub Amir"
+                      gpa:
+                        type: number
+                        example: 3.4
+                      department:
+                        type: string
+                        example: "Computer Science"
+                  token:
+                    type: string
+                    example: "fake-jwt-token"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/courses/available:
+    post:
+      tags:
+        - Courses
+      summary: Get available courses for student
+      description: Returns a list of courses the student can register for, including those locked by unmet prerequisites.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
               properties:
                 university_id:
                   type: string
                   example: "2026001"
       responses:
         '200':
-          description: List of available courses
+          description: List of available and locked courses
           content:
             application/json:
               schema:
@@ -73,33 +100,33 @@ paths:
                 items:
                   $ref: '#/components/schemas/Course'
         '400':
-          description: Unknown error occurred
+          description: Bad Request
           content:
-            application/json:
-              example:
-                success: false
-                message: "Error message details"
-                errorCode: "UNKNOWN_ERROR"
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Student not found
           content:
-            application/json:
-              example:
-                success: false
-                message: "Student not found"
-                errorCode: "STUDENT_NOT_FOUND"
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/register-course:
     post:
       tags:
         - Courses
       summary: Register for courses
+      description: Allows a student to register for an array of courses. Enforces prerequisites and level limitations.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - university_id
+                - requested_courses
               properties:
                 university_id:
                   type: string
@@ -108,7 +135,7 @@ paths:
                   type: array
                   items:
                     type: string
-                  example: ["CS311", "CS313"]
+                  example: ["CS313", "CS314"]
       responses:
         '200':
           description: Successfully registered courses
@@ -118,157 +145,90 @@ paths:
                 type: array
                 items:
                   type: string
-              example: ["CS311", "CS313"]
+                example: ["CS212", "CS313", "CS314"]
         '400':
-          description: Validation or array format error
+          description: Registration failed (already passed, already registered, level restricted, or missing prerequisite)
           content:
             application/json:
-              example:
-                success: false
-                message: "requested_courses must be an array"
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Object not found
+          description: Student or course not found
           content:
             application/json:
-              example:
-                success: false
-                message: "Student not found"
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/unregister-course:
     delete:
       tags:
         - Courses
-      summary: Drop a currently registered course
+      summary: Unregister a course
+      description: Removes a course from the student's currently registered courses list.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - university_id
+                - course_code
               properties:
                 university_id:
                   type: string
                   example: "2026001"
                 course_code:
                   type: string
-                  example: "CS311"
+                  example: "CS212"
       responses:
         '200':
-          description: Course successfully unregistered
-          content:
-            application/json:
-              example:
-                success: true
-                message: "Course unregistered successfully"
-        '400':
-          description: General execution error
-          content:
-            application/json:
-              example:
-                success: false
-                message: "Details of the error"
-        '404':
-          description: Validation failed (missing student or course)
-          content:
-            application/json:
-              example:
-                success: false
-                message: "Course is not in your current registration list"
-
-  /api/dashboard:
-    post:
-      tags:
-        - Student Info
-      summary: Get student dashboard overview
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                university_id:
-                  type: string
-                  example: "2026001"
-      responses:
-        '200':
-          description: Dashboard details
-          content:
-            application/json:
-              example:
-                gpa: 3.4
-                available_hours: 21
-                passed_hours: 30
-                registered_courses_count: 2
-                registered_courses_details:
-                  - code: "CS311"
-                    course_name: "Computer Security"
-                    hours: 3
-                    professor: "Dr. Tarek"
-                    action: "Delete"
-        '404':
-          description: Student not found
-          content:
-            application/json:
-              example:
-                success: false
-                message: "Student not found"
-
-  /api/profile:
-    post:
-      tags:
-        - Student Info
-      summary: Get student profile data
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                university_id:
-                  type: string
-                  example: "2026001"
-      responses:
-        '200':
-          description: Profile details
+          description: Course unregistered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Student'
-              example:
-                name: "Abanoub Amir"
-                email: "abanoubamir@university.edu"
-                year_of_study: "Second Year"
-                department: "Computer Science"
-                student_id: "2026001"
-                gpa: 3.4
-        '404':
-          description: Student not found
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Course unregistered successfully"
+        '400':
+          description: Bad request
           content:
             application/json:
-              example:
-                success: false
-                message: "Student not found"
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Student not found or course not in registration list
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/grades:
+  /api/timetable:
     post:
       tags:
-        - Student Info
-      summary: Get academic history breakdown
+        - Student
+      summary: Get student timetable
+      description: Returns the weekly schedule for the student's registered courses.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - university_id
               properties:
                 university_id:
                   type: string
                   example: "2026001"
       responses:
         '200':
-          description: List of graded courses
+          description: Timetable data
           content:
             application/json:
               schema:
@@ -276,89 +236,240 @@ paths:
                 items:
                   type: object
                   properties:
+                    course_code:
+                      type: string
+                      example: "CS212"
                     course_name:
                       type: string
-                    semester:
+                      example: "Data Structures"
+                    day:
                       type: string
-                    grade:
-                      type: number
-                    recognition:
+                      example: "Sunday"
+                    time:
                       type: string
-              example:
-                - course_name: "Fundamentals of CS"
-                  semester: "First 2024"
-                  grade: 90
-                  recognition: "A"
-                - course_name: "Structured Programming"
-                  semester: "Second 2024"
-                  grade: 85
-                  recognition: "B+"
-                - course_name: "Data Structures"
-                  semester: "First 2025"
-                  grade: 97
-                  recognition: "A+"
+                      example: "10:00 AM - 12:00 PM"
+                    location:
+                      type: string
+                      example: "Lab 1"
         '404':
           description: Student not found
           content:
             application/json:
-              example:
-                success: false
-                message: "Student not found"
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profile:
+    post:
+      tags:
+        - Student
+      summary: Get student profile
+      description: Retrieves standard profile information (name, email, GPA, year of study).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+      responses:
+        '200':
+          description: Student profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+        '404':
+          description: Student not found
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/grades:
+    post:
+      tags:
+        - Student
+      summary: Get student academic history
+      description: Retrieves the list of historically passed courses with their grades.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+      responses:
+        '200':
+          description: Academic grades history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GradeItem'
+        '404':
+          description: Student not found
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dashboard:
+    post:
+      tags:
+        - Student
+      summary: Get dashboard statistics
+      description: Retrieves aggregated data for the dashboard (e.g., GPA, available hours, registered courses).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - university_id
+              properties:
+                university_id:
+                  type: string
+                  example: "2026001"
+      responses:
+        '200':
+          description: Dashboard summary data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gpa:
+                    type: number
+                    example: 3.4
+                  available_hours:
+                    type: number
+                    example: 21
+                  passed_hours:
+                    type: number
+                    example: 65
+                  registered_courses_count:
+                    type: integer
+                    example: 1
+                  registered_courses_details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          example: "CS212"
+                        course_name:
+                          type: string
+                          example: "Data Structures"
+                        hours:
+                          type: integer
+                          example: 3
+                        professor:
+                          type: string
+                          example: "Dr. Osama"
+                        action:
+                          type: string
+                          example: "Delete"
+        '404':
+          description: Student not found
+          content:
+            application/json:
+               schema:
+                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
-    LoginRequest:
-      type: object
-      properties:
-        university_id:
-          type: string
-          example: "2026001"
-        password:
-          type: string
-          example: "123"
-          
     Course:
       type: object
       properties:
         code:
           type: string
-          example: "CS111"
+          example: "CS314"
         name:
           type: string
-          example: "Fundamentals of CS"
+          example: "Machine Learning"
         credits:
           type: integer
           example: 3
         level:
           type: integer
-          example: 1
+          example: 3
         prerequisites:
           type: array
           items:
             type: string
-          example: []
+          example: ["CS211"]
         professor:
           type: string
-          example: "Dr. Osama"
+          example: "Dr. Tarek"
+        is_locked:
+          type: boolean
+          example: true
+        lock_reason:
+          type: string
+          nullable: true
+          example: "Prerequisite Missing: CS211"
 
-    Student:
+    StudentProfile:
       type: object
       properties:
-        student_id:
-          type: string
-          example: "2026001"
         name:
           type: string
           example: "Abanoub Amir"
         email:
           type: string
           example: "abanoubamir@university.edu"
-        gpa:
-          type: number
-          example: 3.4
+        year_of_study:
+          type: string
+          example: "Third Year"
         department:
           type: string
           example: "Computer Science"
-        year_of_study:
+        student_id:
           type: string
-          example: "Second Year"
+          example: "2026001"
+        gpa:
+          type: number
+          example: 3.4
+
+    GradeItem:
+      type: object
+      properties:
+        course_name:
+          type: string
+          example: "Structured Programming"
+        semester:
+          type: string
+          example: "Second 2024"
+        grade:
+          type: number
+          example: 85
+        recognition:
+          type: string
+          example: "B+"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Detailed error message describing the failure."
+        errorCode:
+          type: string
+          example: "PREREQUISITE_MISSING"
+```
