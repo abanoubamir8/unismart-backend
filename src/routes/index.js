@@ -8,20 +8,20 @@ const mockCourses = [
     { code: 'BS111', name: 'Math 1', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Ayman' },
     { code: 'BS113', name: 'Math 2', credits: 3, level: 1, prerequisites: ['BS111'], professor: 'Dr. Ayman' },
     { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
-    
+
     // Level 2
     { code: 'CS211', name: 'Object Oriented Programming', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Yasser' },
     { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
     { code: 'IS211', name: 'Introduction to Database Systems', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Noha' },
     { code: 'SE211', name: 'Introduction to Software Engineering', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Rania' },
     { code: 'BS211', name: 'Math 3', credits: 3, level: 2, prerequisites: ['BS113'], professor: 'Dr. Samy' },
-    
+
     // Level 3
     { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212', 'BS113'], professor: 'Dr. Hany' },
     { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS313'], professor: 'Dr. Tarek' },
     { code: 'SE311', name: 'Advanced Software Engineering', credits: 3, level: 3, prerequisites: ['SE211', 'CS211'], professor: 'Dr. Rania' },
     { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Tarek' },
-    
+
     // Level 4
     { code: 'CS414', name: 'Data Science', credits: 3, level: 4, prerequisites: ['CS314'], professor: 'Dr. Yasser' },
     { code: 'CS415', name: 'Cloud Computing', credits: 3, level: 4, prerequisites: ['CS311'], professor: 'Dr. Osama' },
@@ -182,7 +182,7 @@ router.post('/api/courses/available', (req, res) => {
                     break;
                 }
             }
-            
+
             return {
                 ...course,
                 is_locked: isLocked,
@@ -233,8 +233,8 @@ router.post('/api/register-course', (req, res) => {
             // Strictly check prerequisites
             for (const prereq of course.prerequisites) {
                 if (!passedCodes.includes(prereq)) {
-                    return res.status(400).json({ 
-                        success: false, 
+                    return res.status(400).json({
+                        success: false,
                         message: `Prerequisite missing: You must pass ${prereq} before registering for ${courseCode}.`,
                         errorCode: "PREREQUISITE_MISSING"
                     });
@@ -256,7 +256,7 @@ router.post('/api/unregister-course', (req, res) => {
     try {
         const { university_id, course_code } = req.body;
         const student = mockStudents.find(s => s.student_id === university_id);
-        
+
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
@@ -267,7 +267,11 @@ router.post('/api/unregister-course', (req, res) => {
         }
 
         student.registered_courses.splice(courseIndex, 1);
-        res.status(200).json({ success: true, message: 'Course unregistered successfully' });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Course removed', 
+            updated_registered_courses: student.registered_courses 
+        });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
