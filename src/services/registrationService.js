@@ -20,7 +20,7 @@ const mockStudents = [
 
 const mockCourses = [
   // ==========================================
-  // LEVEL 1: FRESHMAN (General Program)
+  // LEVEL 1:
   // ==========================================
   { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [] },
   { code: 'UNV113', name: 'English Language 1', credits: 2, level: 1, prerequisites: [] },
@@ -37,7 +37,7 @@ const mockCourses = [
   { code: 'IT111', name: 'Fundamentals of Information Technology', credits: 3, level: 1, prerequisites: [] },
 
   // ==========================================
-  // LEVEL 2: SOPHOMORE (General Program)
+  // LEVEL 2: 
   // ==========================================
   { code: 'BS117', name: 'Operations Research', credits: 3, level: 2, prerequisites: ['BS111'] },
   { code: 'BS114', name: 'Math 3', credits: 3, level: 2, prerequisites: ['BS113'] },
@@ -52,7 +52,7 @@ const mockCourses = [
   { code: 'CS213', name: 'Algorithm Analysis and Design', credits: 3, level: 2, prerequisites: ['CS212'] },
 
   // ==========================================
-  // LEVEL 3: JUNIOR (Specialized Departments)
+  // LEVEL 3: 
   // ==========================================
   // Shared / Cross-Department Level 3 Courses
   { code: 'IS311', name: 'Analysis and Design of Information Systems', credits: 3, level: 3, prerequisites: ['IS211'] },
@@ -94,7 +94,7 @@ const mockCourses = [
   { code: 'SE316', name: 'User Interface Design', credits: 3, level: 3, prerequisites: ['SE312'] },
 
   // ==========================================
-  // LEVEL 4: SENIOR (Specialized Departments)
+  // LEVEL 4: SENIOR 
   // ==========================================
   // Shared Level 4 Courses
   { code: 'CS412', name: 'Internet of Things (IOT)', credits: 3, level: 4, prerequisites: ['IT212'] },
