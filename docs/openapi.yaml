@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  title: UniSmart API
+  description: Professional Academic Advising & Registration Core
+  version: 2.0.0
+
+tags:
+  - name: Authentication
+    description: Core login routes accommodating distinct administrative and student permissions.
+  - name: Student Portal
+    description: Student-centric operations such as course registration, grades parsing, and automated validations.
+  - name: Admin Control Center
+    description: Administrative functionalities for robust course modifications and structural overrides. Protected locally.
+
+paths:
+  /api/login:
+    post:
+      summary: Unified System Login
+      tags: [Authentication]
+      description: Single boundary for student or administrator logins seamlessly distributing specific role footprints internally.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                universityId:
+                  type: string
+                  example: "2026001"
+                password:
+                  type: string
+                  example: "123"
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    title: AdminResponse
+                    properties:
+                      success: { type: boolean, example: true }
+                      role: { type: string, example: "admin" }
+                      name: { type: string, example: "System Administrator" }
+                      token: { type: string, example: "fake-admin-jwt-token" }
+                  - type: object
+                    title: StudentResponse
+                    properties:
+                      success: { type: boolean, example: true }
+                      role: { type: string, example: "student" }
+                      studentData:
+                        type: object
+                        properties:
+                          name: { type: string, example: "Abanoub Amir" }
+                          gpa: { type: number, example: 3.4 }
+                          department: { type: string, example: "Computer Science" }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: false }
+                  message: { type: string, example: "Invalid university ID or password" }
+                  errorCode: { type: string, example: "INVALID_CREDENTIALS" }
+
+  /api/student/dashboard:
+    post:
+      summary: Retrieves Student Dashboard Elements
+      tags: [Student Portal]
+      description: Gathers structural hours dynamically mapping GPA and internal registration constants seamlessly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                universityId: { type: string, example: "2026001" }
+      responses:
+        '200':
+          description: Payload fetched successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gpa: { type: number, example: 3.4 }
+                  availableHours: { type: number, example: 21 }
+                  passedHours: { type: number, example: 65 }
+                  registeredCoursesCount: { type: number, example: 2 }
+        '404':
+          description: Standard error boundary payload
+  
+  /api/student/register-course:
+    post:
+      summary: Enrols the student seamlessly mapping prerequisites.
+      tags: [Student Portal]
+      description: Cross-checks level locking logic independently mapping array properties safely onto the JSON model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                universityId: { type: string, example: "2026101" }
+                requestedCourses: 
+                  type: array
+                  items:
+                    type: string
+                  example: ["CS111", "BS111"]
+      responses:
+        '200':
+          description: Enrollment mapping success.
+        '400':
+          description: Fails organically missing PREREQUISITE_MISSING or basic capacity overloads safely forwarding specific strings.
+
+  /api/admin/stats:
+    post:
+      summary: Global Admin Dashboard
+      tags: [Admin Control Center]
+      description: Internal view generating deep structural metrics directly from active JSON caches continuously. Secure routes protected via x-user-role.
+      parameters:
+        - in: header
+          name: x-user-role
+          schema:
+            type: string
+          required: true
+          example: "admin"
+      responses:
+        '200':
+          description: Fetched natively.
+        '403':
+          description: Role protection hook blocked access generically ensuring structural payload safety.

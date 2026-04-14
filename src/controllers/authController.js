@@ -1,24 +1,35 @@
-const authService = require('../services/authService');
+const db = require('../models/jsonDatabase');
 
-const login = async (req, res, next) => {
-  try {
-    const { national_id, password } = req.body;
-    
-    if (!national_id || !password) {
-      return res.status(400).json({ success: false, error: 'national_id and password are required' });
+exports.loginUser = (req, res, next) => {
+    try {
+        const { universityId, password } = req.body;
+        
+        const admin = db.admins.find(a => a.username === universityId && a.password === password);
+        if (admin) {
+            return res.status(200).json({
+                success: true,
+                role: "admin",
+                name: admin.name,
+                token: "fake-admin-jwt-token"
+            });
+        }
+
+        const student = db.students.find(s => s.studentId === universityId && s.password === password);
+        if (student) {
+            return res.status(200).json({
+                success: true,
+                role: "student",
+                message: "Login successful",
+                studentData: { name: student.name, gpa: student.gpa, department: student.department },
+                token: "fake-student-jwt-token"
+            });
+        }
+
+        const err = new Error("Invalid university ID or password");
+        err.statusCode = 401;
+        err.errorCode = "INVALID_CREDENTIALS";
+        return next(err);
+    } catch (error) {
+        next(error);
     }
-
-    const data = await authService.login(national_id, password);
-
-    res.status(200).json({
-      success: true,
-      data
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = {
-  login
 };
