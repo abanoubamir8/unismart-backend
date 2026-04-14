@@ -1,8 +1,14 @@
 openapi: 3.0.0
 info:
-  title: Antigravity UniSmart API
+  title: UniSmart API
   description: Professional Academic Advising & Registration Core APIs.
   version: 2.0.0
+
+servers:
+  - url: https://unismart-backend-one.vercel.app
+    description: Production Server (Vercel)
+  - url: http://localhost:3000
+    description: Local Development Server
 
 tags:
   - name: Authentication
