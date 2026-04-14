@@ -1,35 +1,48 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
-const mockCourses = [
+const dataDir = path.join(process.cwd(), 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const defaultCourses = [
     // Level 1
-    { code: 'CS111', name: 'Fundamentals of Computer Science', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama' },
-    { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona' },
-    { code: 'BS111', name: 'Math 1', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Ayman' },
-    { code: 'BS113', name: 'Math 2', credits: 3, level: 1, prerequisites: ['BS111'], professor: 'Dr. Ayman' },
-    { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed' },
+    { code: 'CS111', name: 'Fundamentals of Computer Science', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Osama', capacity: 60, status: 'Available' },
+    { code: 'CS112', name: 'Structured Programming', credits: 3, level: 1, prerequisites: ['CS111'], professor: 'Dr. Mona', capacity: 60, status: 'Available' },
+    { code: 'BS111', name: 'Math 1', credits: 3, level: 1, prerequisites: [], professor: 'Dr. Ayman', capacity: 60, status: 'Available' },
+    { code: 'BS113', name: 'Math 2', credits: 3, level: 1, prerequisites: ['BS111'], professor: 'Dr. Ayman', capacity: 60, status: 'Available' },
+    { code: 'UNV112', name: 'Societal Issues', credits: 2, level: 1, prerequisites: [], professor: 'Dr. Ahmed', capacity: 60, status: 'Available' },
 
     // Level 2
-    { code: 'CS211', name: 'Object Oriented Programming', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Yasser' },
-    { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama' },
-    { code: 'IS211', name: 'Introduction to Database Systems', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Noha' },
-    { code: 'SE211', name: 'Introduction to Software Engineering', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Rania' },
-    { code: 'BS211', name: 'Math 3', credits: 3, level: 2, prerequisites: ['BS113'], professor: 'Dr. Samy' },
+    { code: 'CS211', name: 'Object Oriented Programming', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Yasser', capacity: 60, status: 'Available' },
+    { code: 'CS212', name: 'Data Structures', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Osama', capacity: 60, status: 'Available' },
+    { code: 'IS211', name: 'Introduction to Database Systems', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Noha', capacity: 60, status: 'Available' },
+    { code: 'SE211', name: 'Introduction to Software Engineering', credits: 3, level: 2, prerequisites: ['CS112'], professor: 'Dr. Rania', capacity: 60, status: 'Available' },
+    { code: 'BS211', name: 'Math 3', credits: 3, level: 2, prerequisites: ['BS113'], professor: 'Dr. Samy', capacity: 60, status: 'Available' },
 
     // Level 3
-    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212', 'BS113'], professor: 'Dr. Hany' },
-    { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS313'], professor: 'Dr. Tarek' },
-    { code: 'SE311', name: 'Advanced Software Engineering', credits: 3, level: 3, prerequisites: ['SE211', 'CS211'], professor: 'Dr. Rania' },
-    { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Tarek' },
+    { code: 'CS313', name: 'Artificial Intelligence', credits: 3, level: 3, prerequisites: ['CS212', 'BS113'], professor: 'Dr. Hany', capacity: 60, status: 'Available' },
+    { code: 'CS314', name: 'Machine Learning', credits: 3, level: 3, prerequisites: ['CS313'], professor: 'Dr. Tarek', capacity: 60, status: 'Available' },
+    { code: 'SE311', name: 'Advanced Software Engineering', credits: 3, level: 3, prerequisites: ['SE211', 'CS211'], professor: 'Dr. Rania', capacity: 60, status: 'Available' },
+    { code: 'CS311', name: 'Computer Security', credits: 3, level: 3, prerequisites: ['CS212'], professor: 'Dr. Tarek', capacity: 60, status: 'Available' },
 
     // Level 4
-    { code: 'CS414', name: 'Data Science', credits: 3, level: 4, prerequisites: ['CS314'], professor: 'Dr. Yasser' },
-    { code: 'CS415', name: 'Cloud Computing', credits: 3, level: 4, prerequisites: ['CS311'], professor: 'Dr. Osama' },
-    { code: 'PR411', name: 'Graduation Project 1', credits: 3, level: 4, prerequisites: [], professor: 'Dr. Mona' },
-    { code: 'PR412', name: 'Graduation Project 2', credits: 3, level: 4, prerequisites: ['PR411'], professor: 'Dr. Hany' }
+    { code: 'CS414', name: 'Data Science', credits: 3, level: 4, prerequisites: ['CS314'], professor: 'Dr. Yasser', capacity: 60, status: 'Available' },
+    { code: 'CS415', name: 'Cloud Computing', credits: 3, level: 4, prerequisites: ['CS311'], professor: 'Dr. Osama', capacity: 60, status: 'Available' },
+    { code: 'PR411', name: 'Graduation Project 1', credits: 3, level: 4, prerequisites: [], professor: 'Dr. Mona', capacity: 60, status: 'Available' },
+    { code: 'PR412', name: 'Graduation Project 2', credits: 3, level: 4, prerequisites: ['PR411'], professor: 'Dr. Hany', capacity: 60, status: 'Available' }
 ];
 
-const mockStudents = [
+const defaultLogs = [];
+
+const defaultAdmins = [
+    { username: "admin01", password: "admin@2026", name: "System Administrator" }
+];
+
+const defaultStudents = [
     {
         // Student 1 (The Freshman)
         student_id: "2026101",
@@ -119,6 +132,39 @@ const mockStudents = [
     }
 ];
 
+const loadData = (filename, defaultData) => {
+    try {
+        const filePath = path.join(dataDir, filename);
+        if (fs.existsSync(filePath)) {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            if (raw.trim() === '') return defaultData;
+            return JSON.parse(raw);
+        }
+    } catch (e) {
+        console.error(`Error parsing ${filename}:`, e);
+    }
+    return defaultData;
+};
+
+let mockCourses = loadData('courses.json', defaultCourses);
+let mockStudents = loadData('students.json', defaultStudents);
+let globalRegistrationLog = loadData('logs.json', defaultLogs);
+let mockAdmins = loadData('admins.json', defaultAdmins);
+
+const saveToDisk = () => {
+    try {
+        fs.writeFileSync(path.join(dataDir, 'courses.json'), JSON.stringify(mockCourses, null, 2));
+        fs.writeFileSync(path.join(dataDir, 'students.json'), JSON.stringify(mockStudents, null, 2));
+        fs.writeFileSync(path.join(dataDir, 'logs.json'), JSON.stringify(globalRegistrationLog, null, 2));
+        fs.writeFileSync(path.join(dataDir, 'admins.json'), JSON.stringify(mockAdmins, null, 2));
+    } catch (err) {
+        console.error("Failed to save data:", err);
+    }
+};
+
+// Initial save to create files if they don't exist
+saveToDisk();
+
 const calculateLevel = (hours) => {
     if (hours < 28) return 1;
     if (hours < 63) return 2;
@@ -135,21 +181,33 @@ const getGpaMaxHours = (gpa) => {
 
 router.post('/api/login', (req, res) => {
     const { university_id, password } = req.body;
-    const student = mockStudents.find(s => s.student_id === university_id && s.password === password);
 
-    if (student) {
-        res.status(200).json({
-            message: "Login successful",
-            student: { name: student.name, gpa: student.gpa, department: student.department },
-            token: "fake-jwt-token"
-        });
-    } else {
-        res.status(401).json({
-            success: false,
-            message: "Invalid university ID or password",
-            errorCode: "INVALID_CREDENTIALS"
+    const admin = mockAdmins.find(a => a.username === university_id && a.password === password);
+    if (admin) {
+        return res.status(200).json({
+            success: true,
+            role: "admin",
+            name: admin.name,
+            token: "fake-admin-jwt-token"
         });
     }
+
+    const student = mockStudents.find(s => s.student_id === university_id && s.password === password);
+    if (student) {
+        return res.status(200).json({
+            success: true,
+            role: "student",
+            message: "Login successful",
+            student_data: { name: student.name, gpa: student.gpa, department: student.department },
+            token: "fake-student-jwt-token"
+        });
+    }
+
+    res.status(401).json({
+        success: false,
+        message: "Invalid university ID or password",
+        errorCode: "INVALID_CREDENTIALS"
+    });
 });
 
 router.post('/api/courses/available', (req, res) => {
@@ -227,7 +285,7 @@ router.post('/api/register-course', (req, res) => {
                 return res.status(400).json({ success: false, message: `Already registered for course: ${courseCode}` });
             }
             if (course.level > studentLevel) {
-                return res.status(400).json({ success: false, message: `This course is Level ${course.level}. You are currently Level ${studentLevel}.` });
+                return res.status(400).json({ success: false, message: `Registration failed: ${course.name} (${course.code}) requires Level ${course.level}, but you are currently Level ${studentLevel}.` });
             }
 
             // Strictly check prerequisites
@@ -235,7 +293,7 @@ router.post('/api/register-course', (req, res) => {
                 if (!passedCodes.includes(prereq)) {
                     return res.status(400).json({
                         success: false,
-                        message: `Prerequisite missing: You must pass ${prereq} before registering for ${courseCode}.`,
+                        message: `Cannot register for ${course.name}. You must pass ${prereq} first.`,
                         errorCode: "PREREQUISITE_MISSING"
                     });
                 }
@@ -243,6 +301,19 @@ router.post('/api/register-course', (req, res) => {
         }
 
         student.registered_courses.push(...requested_courses);
+        
+        requested_courses.forEach(code => {
+            const course = mockCourses.find(c => c.code === code);
+            globalRegistrationLog.unshift({
+                student_id: student.student_id,
+                student_name: student.name,
+                course_code: code,
+                course_name: course ? course.name : code,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        saveToDisk();
         res.status(200).json(student.registered_courses);
     } catch (error) {
         res.status(400).json({
@@ -267,6 +338,7 @@ router.post('/api/unregister-course', (req, res) => {
         }
 
         student.registered_courses.splice(courseIndex, 1);
+        saveToDisk();
         res.status(200).json({ 
             success: true, 
             message: 'Course removed', 
@@ -380,6 +452,110 @@ router.post('/api/dashboard', (req, res) => {
         registered_courses_count: student.registered_courses.length,
         registered_courses_details: registered_courses_details
     });
+});
+
+const requireAdmin = (req, res, next) => {
+    if (req.headers['x-user-role'] === 'admin') {
+        return next();
+    }
+    return res.status(403).json({ success: false, message: "Forbidden: Admin access required." });
+};
+
+// --- ADMIN ROUTES ---
+router.use('/api/admin', requireAdmin);
+
+// Stats
+router.post('/api/admin/stats', (req, res) => {
+    const total_students = mockStudents.length;
+    const total_courses = mockCourses.length;
+    const active_registrations = mockStudents.reduce((sum, s) => sum + s.registered_courses.length, 0);
+    const departments_count = new Set(mockStudents.map(s => s.department)).size;
+
+    res.status(200).json({
+        total_students,
+        total_courses,
+        active_registrations,
+        departments_count,
+        recent_registrations: globalRegistrationLog.slice(0, 5)
+    });
+});
+
+// Student Management
+router.get('/api/admin/students', (req, res) => {
+    res.status(200).json(mockStudents);
+});
+router.post('/api/admin/students/list', (req, res) => {
+    res.status(200).json(mockStudents);
+});
+router.post('/api/admin/students', (req, res) => {
+    const newStudent = { ...req.body, registered_courses: req.body.registered_courses || [], academic_history: req.body.academic_history || [] };
+    mockStudents.push(newStudent);
+    saveToDisk();
+    res.status(201).json(newStudent);
+});
+router.put('/api/admin/students/:id', (req, res) => {
+    const studentIndex = mockStudents.findIndex(s => s.student_id === req.params.id);
+    if (studentIndex === -1) return res.status(404).json({ message: "Student not found" });
+    mockStudents[studentIndex] = { ...mockStudents[studentIndex], ...req.body };
+    saveToDisk();
+    res.status(200).json(mockStudents[studentIndex]);
+});
+router.delete('/api/admin/students/:id', (req, res) => {
+    const studentIndex = mockStudents.findIndex(s => s.student_id === req.params.id);
+    if (studentIndex === -1) return res.status(404).json({ message: "Student not found" });
+    mockStudents.splice(studentIndex, 1);
+    saveToDisk();
+    res.status(200).json({ message: "Student removed" });
+});
+router.put('/api/admin/students/:id/delete', (req, res) => {
+    const studentIndex = mockStudents.findIndex(s => s.student_id === req.params.id);
+    if (studentIndex === -1) return res.status(404).json({ message: "Student not found" });
+    mockStudents.splice(studentIndex, 1);
+    saveToDisk();
+    res.status(200).json({ message: "Student removed" });
+});
+
+// Course Management
+router.get('/api/admin/courses', (req, res) => {
+    const coursesWithCapacityInfo = mockCourses.map(c => {
+        const current_enrollment = mockStudents.filter(s => s.registered_courses.includes(c.code)).length;
+        return { ...c, current_enrollment, capacity_label: `${current_enrollment}/${c.capacity || 60}` };
+    });
+    res.status(200).json(coursesWithCapacityInfo);
+});
+router.post('/api/admin/courses/list', (req, res) => {
+    const coursesWithCapacityInfo = mockCourses.map(c => {
+        const current_enrollment = mockStudents.filter(s => s.registered_courses.includes(c.code)).length;
+        return { ...c, current_enrollment, capacity_label: `${current_enrollment}/${c.capacity || 60}` };
+    });
+    res.status(200).json(coursesWithCapacityInfo);
+});
+router.post('/api/admin/courses', (req, res) => {
+    const newCourse = { capacity: 60, status: 'Available', prerequisites: [], ...req.body };
+    mockCourses.push(newCourse);
+    saveToDisk();
+    res.status(201).json(newCourse);
+});
+router.put('/api/admin/courses/:code', (req, res) => {
+    const courseIndex = mockCourses.findIndex(c => c.code === req.params.code);
+    if (courseIndex === -1) return res.status(404).json({ message: "Course not found" });
+    mockCourses[courseIndex] = { ...mockCourses[courseIndex], ...req.body };
+    saveToDisk();
+    res.status(200).json(mockCourses[courseIndex]);
+});
+router.delete('/api/admin/courses/:code', (req, res) => {
+    const courseIndex = mockCourses.findIndex(c => c.code === req.params.code);
+    if (courseIndex === -1) return res.status(404).json({ message: "Course not found" });
+    mockCourses.splice(courseIndex, 1);
+    saveToDisk();
+    res.status(200).json({ message: "Course removed" });
+});
+router.put('/api/admin/courses/:code/delete', (req, res) => {
+    const courseIndex = mockCourses.findIndex(c => c.code === req.params.code);
+    if (courseIndex === -1) return res.status(404).json({ message: "Course not found" });
+    mockCourses.splice(courseIndex, 1);
+    saveToDisk();
+    res.status(200).json({ message: "Course removed" });
 });
 
 module.exports = router;

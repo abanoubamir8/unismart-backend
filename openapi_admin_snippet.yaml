@@ -1,0 +1,231 @@
+tags:
+  - name: Admin
+    description: Control center APIs for managing courses, students, and system stats.
+
+paths:
+  /api/admin/stats:
+    post:
+      summary: Retrieve Admin Dashboard Statistics
+      tags: [Admin]
+      description: Returns an aggregated summary of courses, students, system usage, and a log of recent UI interactions. Configured as POST for rest.wiki compatibility but operates essentially as a GET endpoint.
+      responses:
+        '200':
+          description: Successful stats retrieval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_students:
+                    type: integer
+                    example: 5
+                  total_courses:
+                    type: integer
+                    example: 15
+                  active_registrations:
+                    type: integer
+                    example: 12
+                  departments_count:
+                    type: integer
+                    example: 3
+                  recent_registrations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        student_id:
+                          type: string
+                          example: "2026001"
+                        student_name:
+                          type: string
+                          example: "Abanoub Amir"
+                        course_code:
+                          type: string
+                          example: "CS313"
+                        course_name:
+                          type: string
+                          example: "Artificial Intelligence"
+                        timestamp:
+                          type: string
+                          format: date-time
+                          example: "2026-04-14T12:00:00Z"
+
+  /api/admin/students/list:
+    post:
+      summary: List all students
+      tags: [Admin]
+      description: Alternative endpoint for GET /api/admin/students to accommodate rest.wiki payload restrictions.
+      responses:
+        '200':
+          description: A list of students
+
+  /api/admin/students:
+    post:
+      summary: Create a new student
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_id:
+                  type: string
+                  example: "2026111"
+                password:
+                  type: string
+                  example: "123"
+                name:
+                  type: string
+                  example: "New Student"
+                email:
+                  type: string
+                  example: "new@university.edu"
+                gpa:
+                  type: number
+                  example: 0.0
+                passed_hours:
+                  type: integer
+                  example: 0
+                department:
+                  type: string
+                  example: "General"
+      responses:
+        '201':
+          description: Student created successfully.
+
+  '/api/admin/students/{id}':
+    put:
+      summary: Update a student
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The university student ID to edit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gpa:
+                  type: number
+                  example: 3.5
+                passed_hours:
+                  type: integer
+                  example: 40
+                department:
+                  type: string
+                  example: "Software Engineering"
+      responses:
+        '200':
+          description: Student updated successfully.
+
+  '/api/admin/students/{id}/delete':
+    put:
+      summary: Remove a student (Wiki Compatible)
+      tags: [Admin]
+      description: Safely removes a student using a PUT request to bypass rest.wiki issues with DELETE body handling.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The student ID to remove
+      responses:
+        '200':
+          description: Student removed successfully
+          
+  /api/admin/courses/list:
+    post:
+      summary: List all courses
+      tags: [Admin]
+      description: Output includes course capacity metrics.
+      responses:
+        '200':
+          description: A list of courses
+
+  /api/admin/courses:
+    post:
+      summary: Create a new course
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  example: "CS511"
+                name:
+                  type: string
+                  example: "Advanced Data Systems"
+                credits:
+                  type: integer
+                  example: 3
+                level:
+                  type: integer
+                  example: 4
+                prerequisites:
+                  type: array
+                  items:
+                    type: string
+                  example: ["IS211"]
+                professor:
+                  type: string
+                  example: "Dr. Hesham"
+                capacity:
+                  type: integer
+                  example: 100
+      responses:
+        '201':
+          description: Course Created
+          
+  '/api/admin/courses/{code}':
+    put:
+      summary: Update course details
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: "Closed"
+                capacity:
+                  type: integer
+                  example: 120
+      responses:
+        '200':
+          description: Course updated
+
+  '/api/admin/courses/{code}/delete':
+    put:
+      summary: Remove a course (Wiki Compatible)
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Course removed
