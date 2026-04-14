@@ -8,9 +8,12 @@ exports.loginUser = (req, res, next) => {
         if (admin) {
             return res.status(200).json({
                 success: true,
-                role: "admin",
-                name: admin.name,
-                token: "fake-admin-jwt-token"
+                data: {
+                    role: "admin",
+                    name: admin.name,
+                    token: "fake-admin-jwt-token"
+                },
+                message: "Admin login successful"
             });
         }
 
@@ -18,10 +21,12 @@ exports.loginUser = (req, res, next) => {
         if (student) {
             return res.status(200).json({
                 success: true,
-                role: "student",
-                message: "Login successful",
-                studentData: { name: student.name, gpa: student.gpa, department: student.department },
-                token: "fake-student-jwt-token"
+                data: {
+                    role: "student",
+                    studentData: { name: student.name, gpa: student.gpa, department: student.department },
+                    token: "fake-student-jwt-token"
+                },
+                message: "Student login successful"
             });
         }
 

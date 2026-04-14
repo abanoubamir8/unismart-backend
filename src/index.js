@@ -25,15 +25,12 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-// Modular Routers
 app.use('/api', authRoutes);
 app.use('/api', studentRoutes);
 app.use('/api/admin', requireAdmin, adminRoutes);
 
-// Health Check
 app.get('/', (req, res) => res.status(200).send('UniSmart API Core (Modular V2)'));
 
-// Centralized Error Catching
 app.use(errorHandler);
 
 module.exports = app;

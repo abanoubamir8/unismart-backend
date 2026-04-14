@@ -1,5 +1,5 @@
 const db = require('../models/jsonDatabase');
-const { calculateLevel, getGpaMaxHours } = require('../utils/academicUtils');
+const { calculateLevel, getGpaMaxHours } = require('../utils/helpers');
 
 exports.getAvailableCourses = (req, res, next) => {
     try {
@@ -11,7 +11,9 @@ exports.getAvailableCourses = (req, res, next) => {
             return next(err);
         }
 
-        const passedCodes = student.academicHistory.map(h => h.courseCode);
+        const passedCodes = student.academicHistory
+            .filter(h => h.recognition !== 'F' && h.grade >= 50)
+            .map(h => h.courseCode);
         const studentLevel = calculateLevel(student.passedHours);
 
         const suggested = db.courses.map(course => {
@@ -41,7 +43,11 @@ exports.getAvailableCourses = (req, res, next) => {
             };
         }).filter(course => course !== null);
 
-        res.status(200).json(suggested);
+        res.status(200).json({
+            success: true,
+            data: suggested,
+            message: "Available courses fetched successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -61,10 +67,14 @@ exports.registerCourse = (req, res, next) => {
             err.statusCode = 400; return next(err);
         }
 
-        const passedCodes = student.academicHistory.map(h => h.courseCode);
+        const passedCodes = student.academicHistory
+            .filter(h => h.recognition !== 'F' && h.grade >= 50)
+            .map(h => h.courseCode);
         const studentLevel = calculateLevel(student.passedHours);
 
-        for (const courseCode of requestedCourses) {
+        const uniqueRequestedCourses = [...new Set(requestedCourses)];
+
+        for (const courseCode of uniqueRequestedCourses) {
             const course = db.courses.find(c => c.code === courseCode);
             if (!course) {
                 const err = new Error(`Course ${courseCode} not found`);
@@ -92,9 +102,9 @@ exports.registerCourse = (req, res, next) => {
             }
         }
 
-        student.registeredCourses.push(...requestedCourses);
+        student.registeredCourses.push(...uniqueRequestedCourses);
         
-        requestedCourses.forEach(code => {
+        uniqueRequestedCourses.forEach(code => {
             const course = db.courses.find(c => c.code === code);
             db.logs.unshift({
                 studentId: student.studentId,
@@ -106,7 +116,11 @@ exports.registerCourse = (req, res, next) => {
         });
 
         db.saveToDisk();
-        res.status(200).json(student.registeredCourses);
+        res.status(200).json({
+            success: true,
+            data: student.registeredCourses,
+            message: "Courses registered successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -132,8 +146,8 @@ exports.unregisterCourse = (req, res, next) => {
         db.saveToDisk();
         res.status(200).json({ 
             success: true, 
-            message: 'Course removed', 
-            updatedRegisteredCourses: student.registeredCourses 
+            data: { updatedRegisteredCourses: student.registeredCourses },
+            message: 'Course removed successfully'
         });
     } catch (error) {
         next(error);
@@ -163,7 +177,11 @@ exports.getTimetable = (req, res, next) => {
             };
         });
 
-        res.status(200).json(timetable);
+        res.status(200).json({
+            success: true,
+            data: timetable,
+            message: "Timetable fetched successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -188,12 +206,16 @@ exports.getProfile = (req, res, next) => {
         };
 
         res.status(200).json({
-            name: student.name,
-            email: student.email,
-            yearOfStudy: yearMapping[level] || "Unknown",
-            department: student.department,
-            studentId: student.studentId,
-            gpa: student.gpa
+            success: true,
+            data: {
+                name: student.name,
+                email: student.email,
+                yearOfStudy: yearMapping[level] || "Unknown",
+                department: student.department,
+                studentId: student.studentId,
+                gpa: student.gpa
+            },
+            message: "Profile fetched successfully"
         });
     } catch (error) {
         next(error);
@@ -220,7 +242,11 @@ exports.getGrades = (req, res, next) => {
             };
         });
 
-        res.status(200).json(grades);
+        res.status(200).json({
+            success: true,
+            data: grades,
+            message: "Grades fetched successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -250,11 +276,15 @@ exports.getDashboard = (req, res, next) => {
         });
 
         res.status(200).json({
-            gpa: student.gpa,
-            availableHours,
-            passedHours: student.passedHours,
-            registeredCoursesCount: student.registeredCourses.length,
-            registeredCoursesDetails
+            success: true,
+            data: {
+                gpa: student.gpa,
+                availableHours,
+                passedHours: student.passedHours,
+                registeredCoursesCount: student.registeredCourses.length,
+                registeredCoursesDetails
+            },
+            message: "Dashboard fetched successfully"
         });
     } catch (error) {
         next(error);

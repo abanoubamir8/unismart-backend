@@ -8,11 +8,15 @@ exports.getStats = (req, res, next) => {
         const departmentsCount = new Set(db.students.map(s => s.department)).size;
 
         res.status(200).json({
-            totalStudents,
-            totalCourses,
-            activeRegistrations,
-            departmentsCount,
-            recentRegistrations: db.logs.slice(0, 5)
+            success: true,
+            data: {
+                totalStudents,
+                totalCourses,
+                activeRegistrations,
+                departmentsCount,
+                recentRegistrations: db.logs.slice(0, 5)
+            },
+            message: "Admin stats fetched successfully"
         });
     } catch (error) {
         next(error);
@@ -21,7 +25,11 @@ exports.getStats = (req, res, next) => {
 
 exports.getStudents = (req, res, next) => {
     try {
-        res.status(200).json(db.students);
+        res.status(200).json({
+            success: true,
+            data: db.students,
+            message: "Students fetched successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -29,10 +37,21 @@ exports.getStudents = (req, res, next) => {
 
 exports.createStudent = (req, res, next) => {
     try {
+        const exists = db.students.find(s => s.studentId === req.body.studentId);
+        if (exists) {
+            const err = new Error("Student ID already exists");
+            err.statusCode = 400; err.errorCode = "DUPLICATE_ID";
+            return next(err);
+        }
+
         const newStudent = { ...req.body, registeredCourses: req.body.registeredCourses || [], academicHistory: req.body.academicHistory || [] };
         db.students.push(newStudent);
         db.saveToDisk();
-        res.status(201).json(newStudent);
+        res.status(201).json({
+            success: true,
+            data: newStudent,
+            message: "Student created successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -47,7 +66,11 @@ exports.updateStudent = (req, res, next) => {
         }
         db.students[studentIndex] = { ...db.students[studentIndex], ...req.body };
         db.saveToDisk();
-        res.status(200).json(db.students[studentIndex]);
+        res.status(200).json({
+            success: true,
+            data: db.students[studentIndex],
+            message: "Student updated successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -62,7 +85,11 @@ exports.deleteStudent = (req, res, next) => {
         }
         db.students.splice(studentIndex, 1);
         db.saveToDisk();
-        res.status(200).json({ message: "Student removed" });
+        res.status(200).json({
+            success: true,
+            data: null,
+            message: "Student removed"
+        });
     } catch (error) {
         next(error);
     }
@@ -74,7 +101,11 @@ exports.getCourses = (req, res, next) => {
             const currentEnrollment = db.students.filter(s => s.registeredCourses.includes(c.code)).length;
             return { ...c, currentEnrollment, capacityLabel: `${currentEnrollment}/${c.capacity || 60}` };
         });
-        res.status(200).json(coursesWithCapacityInfo);
+        res.status(200).json({
+            success: true,
+            data: coursesWithCapacityInfo,
+            message: "Courses fetched successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -85,7 +116,11 @@ exports.createCourse = (req, res, next) => {
         const newCourse = { capacity: 60, status: 'Available', prerequisites: [], ...req.body };
         db.courses.push(newCourse);
         db.saveToDisk();
-        res.status(201).json(newCourse);
+        res.status(201).json({
+            success: true,
+            data: newCourse,
+            message: "Course created successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -100,7 +135,11 @@ exports.updateCourse = (req, res, next) => {
         }
         db.courses[courseIndex] = { ...db.courses[courseIndex], ...req.body };
         db.saveToDisk();
-        res.status(200).json(db.courses[courseIndex]);
+        res.status(200).json({
+            success: true,
+            data: db.courses[courseIndex],
+            message: "Course updated successfully"
+        });
     } catch (error) {
         next(error);
     }
@@ -115,7 +154,11 @@ exports.deleteCourse = (req, res, next) => {
         }
         db.courses.splice(courseIndex, 1);
         db.saveToDisk();
-        res.status(200).json({ message: "Course removed" });
+        res.status(200).json({
+            success: true,
+            data: null,
+            message: "Course removed"
+        });
     } catch (error) {
         next(error);
     }

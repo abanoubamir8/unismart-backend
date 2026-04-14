@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  title: UniSmart API
-  description: Professional Academic Advising & Registration Core
+  title: Antigravity UniSmart API
+  description: Professional Academic Advising & Registration Core APIs.
   version: 2.0.0
 
 tags:
@@ -10,129 +10,652 @@ tags:
   - name: Student Portal
     description: Student-centric operations such as course registration, grades parsing, and automated validations.
   - name: Admin Control Center
-    description: Administrative functionalities for robust course modifications and structural overrides. Protected locally.
+    description: Administrative functionalities for robust course modifications and structural overrides. Protected locally via x-user-role headers.
+
+components:
+  securitySchemes:
+    AdminHeaderAuth:
+      type: apiKey
+      in: header
+      name: x-user-role
+      description: Must be set to 'admin' to access Administration endpoints.
+
+  parameters:
+    AdminRoleHeader:
+      in: header
+      name: x-user-role
+      schema:
+        type: string
+        enum: [admin]
+      required: true
+      description: Essential validation lock gating unauthorized management actions. Note that in a true production environment, this would be a secure JWT authorization mechanism.
+
+  schemas:
+    # --- Base Common Models ---
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: { type: object, description: "Payload varying by context." }
+        message: { type: string, example: "Operation executed seamlessly." }
+        
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string, example: "Dynamic error detailing context." }
+        errorCode: { type: string, example: "GENERIC_ERROR_CODE" }
+
+    # --- Domain Entities ---
+    Student:
+      type: object
+      properties:
+        studentId: { type: string, example: "2026001" }
+        name: { type: string, example: "Abanoub Amir" }
+        email: { type: string, example: "abanoub@university.edu" }
+        gpa: { type: number, example: 3.4 }
+        passedHours: { type: number, example: 65 }
+        department: { type: string, example: "Computer Science" }
+        registeredCourses:
+          type: array
+          items: { type: string }
+          example: ["SE311", "CS313"]
+        academicHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcademicRecord'
+
+    AcademicRecord:
+      type: object
+      properties:
+        courseCode: { type: string, example: "CS111" }
+        semester: { type: string, example: "First 2024" }
+        grade: { type: number, example: 90 }
+        recognition: { type: string, example: "A" }
+
+    Course:
+      type: object
+      properties:
+        code: { type: string, example: "CS111" }
+        name: { type: string, example: "Fundamentals of Computer Science" }
+        credits: { type: number, example: 3 }
+        level: { type: number, example: 1 }
+        prerequisites:
+          type: array
+          items: { type: string }
+          example: []
+        professor: { type: string, example: "Dr. Osama" }
+        capacity: { type: number, example: 60 }
+        status: { type: string, example: "Available" }
+
+    AvailableCourse:
+      allOf:
+        - $ref: '#/components/schemas/Course'
+        - type: object
+          properties:
+            isLocked: { type: boolean, example: false }
+            lockReason: { type: string, nullable: true, example: null }
+
+    RegistrationLog:
+      type: object
+      properties:
+        studentId: { type: string, example: "2026101" }
+        studentName: { type: string, example: "Ahmed Freshman" }
+        courseCode: { type: string, example: "CS111" }
+        courseName: { type: string, example: "Fundamentals of Computer Science" }
+        timestamp: { type: string, format: date-time, example: "2026-04-14T12:00:00.000Z" }
+
+    AdminStats:
+      type: object
+      properties:
+        totalStudents: { type: integer, example: 120 }
+        totalCourses: { type: integer, example: 45 }
+        activeRegistrations: { type: integer, example: 320 }
+        departmentsCount: { type: integer, example: 8 }
+        recentRegistrations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationLog'
 
 paths:
+  # ==========================================
+  # AUTHENTICATION
+  # ==========================================
   /api/login:
     post:
       summary: Unified System Login
       tags: [Authentication]
-      description: Single boundary for student or administrator logins seamlessly distributing specific role footprints internally.
+      description: Validates credential payloads against both Student and Admin datasets. Returns corresponding structural definitions.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [universityId, password]
               properties:
-                universityId:
-                  type: string
-                  example: "2026001"
-                password:
-                  type: string
-                  example: "123"
+                universityId: { type: string, example: "2026001" }
+                password: { type: string, example: "123" }
       responses:
         '200':
-          description: Successful authentication
+          description: Standard Authentication Success Mapping
           content:
             application/json:
               schema:
-                oneOf:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
                   - type: object
-                    title: AdminResponse
                     properties:
-                      success: { type: boolean, example: true }
-                      role: { type: string, example: "admin" }
-                      name: { type: string, example: "System Administrator" }
-                      token: { type: string, example: "fake-admin-jwt-token" }
-                  - type: object
-                    title: StudentResponse
-                    properties:
-                      success: { type: boolean, example: true }
-                      role: { type: string, example: "student" }
-                      studentData:
+                      data:
                         type: object
                         properties:
-                          name: { type: string, example: "Abanoub Amir" }
-                          gpa: { type: number, example: 3.4 }
-                          department: { type: string, example: "Computer Science" }
+                          role: { type: string, example: "student", description: "Either 'student' or 'admin'" }
+                          token: { type: string, example: "fake-jwt-token" }
         '401':
-          description: Unauthorized
+          description: Invalid Credentials Mapping
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: false }
-                  message: { type: string, example: "Invalid university ID or password" }
-                  errorCode: { type: string, example: "INVALID_CREDENTIALS" }
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                InvalidCredentials:
+                  value:
+                    success: false
+                    message: "Invalid university ID or password"
+                    errorCode: "INVALID_CREDENTIALS"
 
-  /api/student/dashboard:
+  # ==========================================
+  # STUDENT PORTAL 
+  # ==========================================
+  /api/dashboard:
     post:
-      summary: Retrieves Student Dashboard Elements
+      summary: Retrieve Academic Dashboard Parameters
       tags: [Student Portal]
-      description: Gathers structural hours dynamically mapping GPA and internal registration constants seamlessly.
+      description: Yields maximum available hours, registered scopes, and exact GPA parsing.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [universityId]
               properties:
                 universityId: { type: string, example: "2026001" }
       responses:
         '200':
-          description: Payload fetched successfully.
+          description: Dashboard Mapping Fetched
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  gpa: { type: number, example: 3.4 }
-                  availableHours: { type: number, example: 21 }
-                  passedHours: { type: number, example: 65 }
-                  registeredCoursesCount: { type: number, example: 2 }
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          gpa: { type: number, example: 3.4 }
+                          availableHours: { type: number, example: 21 }
+                          passedHours: { type: number, example: 65 }
+                          registeredCoursesCount: { type: integer, example: 2 }
         '404':
-          description: Standard error boundary payload
-  
-  /api/student/register-course:
+          description: Target Not Found Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                StudentNotFound:
+                  value:
+                    success: false
+                    message: "Student not found"
+                    errorCode: "STUDENT_NOT_FOUND"
+
+  /api/profile:
     post:
-      summary: Enrols the student seamlessly mapping prerequisites.
+      summary: Retrieves Student Personal Profile
       tags: [Student Portal]
-      description: Cross-checks level locking logic independently mapping array properties safely onto the JSON model.
+      description: Fetches academic year standing alongside general information mapping inherently utilizing internal helpers logic.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [universityId]
+              properties:
+                universityId: { type: string, example: "2026001" }
+      responses:
+        '200':
+          description: General Profile JSON structure successfully returned
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          name: { type: string, example: "Abanoub Amir" }
+                          email: { type: string, example: "abanoubamir@university.edu" }
+                          yearOfStudy: { type: string, example: "Third Year" }
+                          department: { type: string, example: "Computer Science" }
+                          studentId: { type: string, example: "2026001" }
+                          gpa: { type: number, example: 3.4 }
+        '404':
+          description: Target Not Found Error
+
+  /api/timetable:
+    post:
+      summary: Retrieve Computed Timetable
+      tags: [Student Portal]
+      description: Iterates through registered identifiers yielding concrete scheduled parameters algorithmically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [universityId]
+              properties:
+                universityId: { type: string, example: "2026001" }
+      responses:
+        '200':
+          description: Timetable mapped seamlessly
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            courseCode: { type: string, example: "CS111" }
+                            courseName: { type: string, example: "Fundamentals" }
+                            day: { type: string, example: "Sunday" }
+                            time: { type: string, example: "10:00 AM - 12:00 PM" }
+                            location: { type: string, example: "Lab 1" }
+        '404':
+          description: Missing Object Identifier
+
+  /api/grades:
+    post:
+      summary: Retrieve Complete Academic History Transcript
+      tags: [Student Portal]
+      description: Returns chronological listings of previously locked and validated course credits alongside distinct recognition letters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [universityId]
+              properties:
+                universityId: { type: string, example: "2026001" }
+      responses:
+        '200':
+          description: Grades object successfully built mapping history blocks structurally.
+
+  /api/courses/available:
+    post:
+      summary: Discover and Filter Available Courses
+      tags: [Student Portal]
+      description: Systematically checks academic history against global capacities. Locks out items structurally exceeding academic level constraints and unfulfilled requisite layers accurately appending lock reasons.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [universityId]
+              properties:
+                universityId: { type: string, example: "2026001" }
+      responses:
+        '200':
+          description: Array mapping populated flawlessly isolating active available matrices.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AvailableCourse'
+
+  /api/register-course:
+    post:
+      summary: Enroll into Curriculum System
+      tags: [Student Portal]
+      description: Highly secure transaction block preventing overlap natively locking capacities evaluating explicit university prerequisites recursively.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [universityId, requestedCourses]
               properties:
                 universityId: { type: string, example: "2026101" }
                 requestedCourses: 
                   type: array
-                  items:
-                    type: string
+                  items: { type: string }
                   example: ["CS111", "BS111"]
       responses:
         '200':
-          description: Enrollment mapping success.
+          description: Secure write succeeded validating parameters fully. Record added organically.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: string }
+                        example: ["CS111", "BS111"]
         '400':
-          description: Fails organically missing PREREQUISITE_MISSING or basic capacity overloads safely forwarding specific strings.
+          description: Multi-layered payload parsing constraints securely mapping PREREQUISITE_MISSING, ALREADY_REGISTERED, or LEVEL_LOCKED anomalies inherently bypassing systemic state faults.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PrerequisiteMissing:
+                  value:
+                    success: false
+                    message: "Cannot register for Structured Programming. You must pass CS111 first."
+                    errorCode: "PREREQUISITE_MISSING"
+                LevelLocked:
+                  value:
+                    success: false
+                    message: "Registration failed: Data Science (CS414) requires Level 4, but you are currently Level 1."
+                    errorCode: "LEVEL_LOCKED"
+                AlreadyPassed:
+                  value:
+                    success: false
+                    message: "Already passed course: CS111"
+        '404':
+          description: Course object strictly failing reference checks. String mapping completely missing globally.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                CourseNotFound:
+                  value:
+                    success: false
+                    message: "Course XX999 not found"
 
-  /api/admin/stats:
+  /api/unregister-course:
     post:
-      summary: Global Admin Dashboard
-      tags: [Admin Control Center]
-      description: Internal view generating deep structural metrics directly from active JSON caches continuously. Secure routes protected via x-user-role.
-      parameters:
-        - in: header
-          name: x-user-role
-          schema:
-            type: string
-          required: true
-          example: "admin"
+      summary: Drop Active Enrolled Course 
+      tags: [Student Portal]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [universityId, courseCode]
+              properties:
+                universityId: { type: string, example: "2026101" }
+                courseCode: { type: string, example: "CS111" }
       responses:
         '200':
-          description: Fetched natively.
+          description: Dropped
+        '404':
+          description: Missing bounds (not in registered array inherently).
+
+  # ==========================================
+  # ADMIN CONTROL CENTER
+  # ==========================================
+  /api/admin/stats:
+    post:
+      summary: System Metrics Dashboard Output
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      responses:
+        '200':
+          description: Statistical mapping natively populated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminStats'
         '403':
-          description: Role protection hook blocked access generically ensuring structural payload safety.
+          description: Middleware strictly intercepting execution structurally generating "Forbidden" outputs completely devoid of system traces unconditionally.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Forbidden:
+                  value:
+                    success: false
+                    message: "Forbidden: Admin access required."
+                    errorCode: "FORBIDDEN"
+
+  /api/admin/students:
+    get:
+      summary: Access Student Collections
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      responses:
+        '200':
+          description: Iterates through total JSON collections natively rendering structured properties externally mapped correctly ensuring output validity universally.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Student'
+    post:
+      summary: Insert Student Instance
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Student'
+      responses:
+        '201':
+          description: Wrote payload actively pushing memory mapping automatically caching persistence via JSON abstraction perfectly safely.
+
+  /api/admin/students/list:
+    post:
+      summary: Alternate Endpoint for Student Fetching
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      responses:
+        '200':
+          description: Returns student array mapped.
+
+  /api/admin/students/{id}:
+    put:
+      summary: Structural Student Update
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Student'
+      responses:
+        '200':
+          description: Successfully overridden mapping properties intelligently merged without loss intrinsically isolating exact properties externally injected.
+        '404':
+          description: System mismatch natively rejected gracefully avoiding error throwing inherently routing error payload dynamically.
+    delete:
+      summary: Erase Target Student
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Exited and dropped arrays
+
+  /api/admin/students/{id}/delete:
+    put:
+      summary: Erase Target Component Form Post Overrides
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Overrides method
+
+  /api/admin/courses:
+    get:
+      summary: Read Academic Capacities System Wide
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      responses:
+        '200':
+          description: Read memory cleanly pushing active array natively wrapped inside structured schema format.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Course'
+    post:
+      summary: Provision Course Payload Structure
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Course'
+      responses:
+        '201':
+          description: Created and mapped natively validating fields appending dynamically securely.
+
+  /api/admin/courses/list:
+    post:
+      summary: Read Global Capacities Alternate
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+      responses:
+        '200':
+          description: Read safely mapped implicitly.
+
+  /api/admin/courses/{code}:
+    put:
+      summary: Map Override to Target Component Architecture
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Course'
+      responses:
+        '200':
+          description: Modified perfectly implicitly generating JSON output structurally cleanly dynamically bound logically natively mapped completely effectively safely unconditionally correctly seamlessly comprehensively flawlessly.
+    delete:
+      summary: Permanently Strip Course Target
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Purged.
+
+  /api/admin/courses/{code}/delete:
+    put:
+      summary: Strip Target Method Compatibility Bound Drop
+      tags: [Admin Control Center]
+      security:
+        - AdminHeaderAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdminRoleHeader'
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Destroyed accurately seamlessly comprehensively flawlessly.

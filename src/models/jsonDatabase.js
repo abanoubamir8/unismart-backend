@@ -144,8 +144,13 @@ const db = {
     students: loadData('students.json', defaultStudents),
     logs: loadData('logs.json', defaultLogs),
     admins: loadData('admins.json', defaultAdmins),
-    
+
     saveToDisk: () => {
+        if (process.env.NODE_ENV === 'production') {
+            console.log("Mock Storage read-only warning triggered for production scope.");
+            return;
+        }
+
         try {
             fs.writeFileSync(path.join(dataDir, 'courses.json'), JSON.stringify(db.courses, null, 2));
             fs.writeFileSync(path.join(dataDir, 'students.json'), JSON.stringify(db.students, null, 2));
@@ -157,6 +162,6 @@ const db = {
     }
 };
 
-db.saveToDisk(); // Automatically provision missing files
+db.saveToDisk();
 
 module.exports = db;
