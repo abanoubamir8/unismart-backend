@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataDir = process.env.VERCEL ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
+const dataDir = process.env.VERCEL ? path.join('/tmp', 'data') : path.join(__dirname, '../../data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -134,7 +134,7 @@ const loadData = (filename, defaultData) => {
             return JSON.parse(raw);
         }
     } catch (e) {
-        console.error(`Error parsing ${filename}:`, e);
+        // Error logging removed for production cleanup
     }
     return defaultData;
 };
@@ -147,7 +147,6 @@ const db = {
 
     saveToDisk: () => {
         if (process.env.NODE_ENV === 'production') {
-            console.log("Mock Storage read-only warning triggered for production scope.");
             return;
         }
 
@@ -157,7 +156,7 @@ const db = {
             fs.writeFileSync(path.join(dataDir, 'logs.json'), JSON.stringify(db.logs, null, 2));
             fs.writeFileSync(path.join(dataDir, 'admins.json'), JSON.stringify(db.admins, null, 2));
         } catch (err) {
-            console.error("Failed to save data:", err);
+            // Error logging removed for production cleanup
         }
     }
 };
