@@ -4,8 +4,16 @@ exports.loginUser = async (req, res, next) => {
     try {
         const { universityId, password, role } = req.body;
 
+        if (!universityId || !password || !role) {
+            const err = new Error("Missing required fields: universityId, password, and role are explicitly required.");
+            err.statusCode = 400;
+            err.errorCode = "VALIDATION_ERROR";
+            return next(err);
+        }
+
         const admin = await prisma.admin.findUnique({
-            where: { username: universityId }
+            where: { username: universityId },
+            select: { name: true, password: true }
         });
         
         if (admin && admin.password === password) {
@@ -27,7 +35,8 @@ exports.loginUser = async (req, res, next) => {
         }
 
         const student = await prisma.student.findUnique({
-            where: { universityId }
+            where: { universityId },
+            select: { name: true, password: true, gpa: true, department: true }
         });
 
         if (student && student.password === password) {
