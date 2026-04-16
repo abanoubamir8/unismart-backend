@@ -2,10 +2,10 @@ const prisma = require('../prisma');
 
 exports.loginUser = async (req, res, next) => {
     try {
-        const { universityId, password, role } = req.body;
+        const { universityId, password } = req.body;
 
-        if (!universityId || !password || !role) {
-            const err = new Error("Missing required fields: universityId, password, and role are explicitly required.");
+        if (!universityId || !password) {
+            const err = new Error("Missing required fields: universityId and password are explicitly required.");
             err.statusCode = 400;
             err.errorCode = "VALIDATION_ERROR";
             return next(err);
@@ -17,12 +17,6 @@ exports.loginUser = async (req, res, next) => {
         });
         
         if (admin && admin.password === password) {
-            if (role !== 'admin') {
-                const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a admin.`);
-                err.statusCode = 403;
-                err.errorCode = 'FORBIDDEN';
-                return next(err);
-            }
             return res.status(200).json({
                 success: true,
                 data: {
@@ -40,12 +34,6 @@ exports.loginUser = async (req, res, next) => {
         });
 
         if (student && student.password === password) {
-            if (role !== 'student') {
-                const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a student.`);
-                err.statusCode = 403;
-                err.errorCode = 'FORBIDDEN';
-                return next(err);
-            }
             return res.status(200).json({
                 success: true,
                 data: {
