@@ -2,10 +2,15 @@ const db = require('../models/jsonDatabase');
 
 exports.loginUser = (req, res, next) => {
     try {
-        const { universityId, password } = req.body;
+        const { universityId, password, role } = req.body;
         
         const admin = db.admins.find(a => a.username === universityId && a.password === password);
         if (admin) {
+            if (role !== 'admin') {
+                const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a admin.`);
+                err.statusCode = 401;
+                return next(err);
+            }
             return res.status(200).json({
                 success: true,
                 data: {
@@ -19,6 +24,11 @@ exports.loginUser = (req, res, next) => {
 
         const student = db.students.find(s => s.studentId === universityId && s.password === password);
         if (student) {
+            if (role !== 'student') {
+                const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a student.`);
+                err.statusCode = 401;
+                return next(err);
+            }
             return res.status(200).json({
                 success: true,
                 data: {
