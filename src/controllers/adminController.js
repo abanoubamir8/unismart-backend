@@ -35,7 +35,18 @@ exports.getStats = async (req, res, next) => {
 
 exports.getStudents = async (req, res, next) => {
     try {
-        const students = await prisma.student.findMany();
+        const students = await prisma.student.findMany({
+            select: {
+                universityId: true,
+                name: true,
+                email: true,
+                gpa: true,
+                passedHours: true,
+                department: true,
+                registeredCourses: true,
+                academicHistory: true
+            }
+        });
         res.status(200).json({
             success: true,
             data: students,
@@ -48,7 +59,7 @@ exports.getStudents = async (req, res, next) => {
 
 exports.createStudent = async (req, res, next) => {
     try {
-        const { studentId, ...data } = req.body;
+        const { studentId, name, password, email, gpa, passedHours, department, registeredCourses, academicHistory } = req.body;
         const exists = await prisma.student.findUnique({ where: { universityId: studentId } });
         if (exists) {
             const err = new Error("Student ID already exists");
@@ -59,9 +70,24 @@ exports.createStudent = async (req, res, next) => {
         const newStudent = await prisma.student.create({
             data: { 
                 universityId: studentId,
-                ...data,
-                registeredCourses: req.body.registeredCourses || [],
-                academicHistory: req.body.academicHistory || []
+                name,
+                password,
+                email,
+                gpa: gpa || 0,
+                passedHours: passedHours || 0,
+                department: department || "General",
+                registeredCourses: registeredCourses || [],
+                academicHistory: academicHistory || []
+            },
+            select: {
+                universityId: true,
+                name: true,
+                email: true,
+                gpa: true,
+                passedHours: true,
+                department: true,
+                registeredCourses: true,
+                academicHistory: true
             }
         });
         
@@ -84,10 +110,25 @@ exports.updateStudent = async (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
-        // if the body passed academicHistory array, Prisma will handle it as Json mapping
+        const allowedFields = ['name', 'email', 'password', 'gpa', 'passedHours', 'department', 'registeredCourses', 'academicHistory'];
+        const updateData = {};
+        for (const key of allowedFields) {
+            if (req.body[key] !== undefined) updateData[key] = req.body[key];
+        }
+
         const updatedStudent = await prisma.student.update({
             where: { universityId: id },
-            data: req.body
+            data: updateData,
+            select: {
+                universityId: true,
+                name: true,
+                email: true,
+                gpa: true,
+                passedHours: true,
+                department: true,
+                registeredCourses: true,
+                academicHistory: true
+            }
         });
 
         res.status(200).json({
@@ -143,12 +184,17 @@ exports.getCourses = async (req, res, next) => {
 
 exports.createCourse = async (req, res, next) => {
     try {
+        const { code, name, credits, level, prerequisites, professor, capacity, status } = req.body;
         const newCourse = await prisma.course.create({
             data: { 
-                capacity: 60, 
-                status: 'Available', 
-                prerequisites: [], 
-                ...req.body 
+                code,
+                name,
+                credits,
+                level,
+                prerequisites: prerequisites || [],
+                professor: professor || "TBA",
+                capacity: capacity || 60, 
+                status: status || 'Available'
             }
         });
         
@@ -171,9 +217,15 @@ exports.updateCourse = async (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
+        const allowedCourseFields = ['name', 'credits', 'level', 'prerequisites', 'professor', 'capacity', 'status'];
+        const updateCourseData = {};
+        for (const key of allowedCourseFields) {
+            if (req.body[key] !== undefined) updateCourseData[key] = req.body[key];
+        }
+
         const updatedCourse = await prisma.course.update({
             where: { code },
-            data: req.body
+            data: updateCourseData
         });
 
         res.status(200).json({
