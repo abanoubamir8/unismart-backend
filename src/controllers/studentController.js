@@ -28,10 +28,12 @@ exports.getAvailableCourses = (req, res, next) => {
                 lockReason = `Semester Level ${course.level} Required`;
             }
 
-            for (const prereq of course.prerequisites) {
-                if (!passedCodes.includes(prereq)) {
+            for (const prereqCode of course.prerequisites) {
+                if (!passedCodes.includes(prereqCode)) {
                     isLocked = true;
-                    lockReason = `Prerequisite Missing: ${prereq}`;
+                    const prereqCourse = db.courses.find(c => c.code === prereqCode);
+                    const prereqName = prereqCourse ? prereqCourse.name : prereqCode;
+                    lockReason = `Missing Prerequisite: ${prereqName}`;
                     break;
                 }
             }
@@ -93,9 +95,11 @@ exports.registerCourse = (req, res, next) => {
                 err.statusCode = 400; return next(err);
             }
 
-            for (const prereq of course.prerequisites) {
-                if (!passedCodes.includes(prereq)) {
-                    const err = new Error(`Cannot register for ${course.name}. You must pass ${prereq} first.`);
+            for (const prereqCode of course.prerequisites) {
+                if (!passedCodes.includes(prereqCode)) {
+                    const prereqCourse = db.courses.find(c => c.code === prereqCode);
+                    const prereqName = prereqCourse ? prereqCourse.name : prereqCode;
+                    const err = new Error(`Registration failed: ${course.name} (${course.code}) requires prerequisite ${prereqName} (${prereqCode}).`);
                     err.statusCode = 400; err.errorCode = "PREREQUISITE_MISSING";
                     return next(err);
                 }
