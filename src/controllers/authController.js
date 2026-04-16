@@ -1,11 +1,14 @@
-const db = require('../models/jsonDatabase');
+const prisma = require('../prisma');
 
-exports.loginUser = (req, res, next) => {
+exports.loginUser = async (req, res, next) => {
     try {
         const { universityId, password, role } = req.body;
 
-        const admin = db.admins.find(a => a.username === universityId && a.password === password);
-        if (admin) {
+        const admin = await prisma.admin.findUnique({
+            where: { username: universityId }
+        });
+        
+        if (admin && admin.password === password) {
             if (role !== 'admin') {
                 const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a admin.`);
                 err.statusCode = 403;
@@ -23,8 +26,11 @@ exports.loginUser = (req, res, next) => {
             });
         }
 
-        const student = db.students.find(s => s.studentId === universityId && s.password === password);
-        if (student) {
+        const student = await prisma.student.findUnique({
+            where: { universityId }
+        });
+
+        if (student && student.password === password) {
             if (role !== 'student') {
                 const err = new Error(`Unauthorized: Role mismatch. You are attempting to login as ${role} but this account is a student.`);
                 err.statusCode = 403;

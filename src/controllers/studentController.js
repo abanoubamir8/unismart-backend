@@ -1,22 +1,26 @@
-const db = require('../models/jsonDatabase');
+const prisma = require('../prisma');
 const { calculateLevel, getGpaMaxHours } = require('../utils/helpers');
 
-exports.getAvailableCourses = (req, res, next) => {
+exports.getAvailableCourses = async (req, res, next) => {
     try {
         const { universityId } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
         if (!student) {
             const err = new Error('Student not found');
             err.statusCode = 404; err.errorCode = 'STUDENT_NOT_FOUND';
             return next(err);
         }
 
-        const passedCodes = student.academicHistory
+        const courses = await prisma.course.findMany();
+        
+        const academicHistory = (typeof student.academicHistory === 'string') ? JSON.parse(student.academicHistory) : student.academicHistory;
+        const passedCodes = (academicHistory || [])
             .filter(h => h.recognition !== 'F' && h.grade >= 50)
             .map(h => h.courseCode);
+            
         const studentLevel = calculateLevel(student.passedHours);
 
-        const suggested = db.courses.map(course => {
+        const suggested = courses.map(course => {
             if (passedCodes.includes(course.code)) return null;
             if (student.registeredCourses.includes(course.code)) return null;
 
@@ -31,7 +35,7 @@ exports.getAvailableCourses = (req, res, next) => {
             for (const prereqCode of course.prerequisites) {
                 if (!passedCodes.includes(prereqCode)) {
                     isLocked = true;
-                    const prereqCourse = db.courses.find(c => c.code === prereqCode);
+                    const prereqCourse = courses.find(c => c.code === prereqCode);
                     const prereqName = prereqCourse ? prereqCourse.name : prereqCode;
                     lockReason = `Missing Prerequisite: ${prereqName}`;
                     break;
@@ -55,10 +59,10 @@ exports.getAvailableCourses = (req, res, next) => {
     }
 };
 
-exports.registerCourse = (req, res, next) => {
+exports.registerCourse = async (req, res, next) => {
     try {
         const { universityId, requestedCourses } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
         if (!student) {
             const err = new Error('Student not found');
             err.statusCode = 404; return next(err);
@@ -69,7 +73,10 @@ exports.registerCourse = (req, res, next) => {
             err.statusCode = 400; return next(err);
         }
 
-        const passedCodes = student.academicHistory
+        const courses = await prisma.course.findMany();
+        
+        const academicHistory = (typeof student.academicHistory === 'string') ? JSON.parse(student.academicHistory) : student.academicHistory;
+        const passedCodes = (academicHistory || [])
             .filter(h => h.recognition !== 'F' && h.grade >= 50)
             .map(h => h.courseCode);
         const studentLevel = calculateLevel(student.passedHours);
@@ -77,10 +84,14 @@ exports.registerCourse = (req, res, next) => {
         const uniqueRequestedCourses = [...new Set(requestedCourses)];
 
         for (const courseCode of uniqueRequestedCourses) {
-            const course = db.courses.find(c => c.code === courseCode);
+            const course = courses.find(c => c.code === courseCode);
             if (!course) {
                 const err = new Error(`Course ${courseCode} not found`);
                 err.statusCode = 404; return next(err);
+            }
+            if (course.capacity <= 0) {
+                const err = new Error(`Course ${courseCode} is fully booked.`);
+                err.statusCode = 400; return next(err);
             }
             if (passedCodes.includes(courseCode)) {
                 const err = new Error(`Already passed course: ${courseCode}`);
@@ -97,7 +108,7 @@ exports.registerCourse = (req, res, next) => {
 
             for (const prereqCode of course.prerequisites) {
                 if (!passedCodes.includes(prereqCode)) {
-                    const prereqCourse = db.courses.find(c => c.code === prereqCode);
+                    const prereqCourse = courses.find(c => c.code === prereqCode);
                     const prereqName = prereqCourse ? prereqCourse.name : prereqCode;
                     const err = new Error(`Registration failed: ${course.name} (${course.code}) requires prerequisite ${prereqName} (${prereqCode}).`);
                     err.statusCode = 400; err.errorCode = "PREREQUISITE_MISSING";
@@ -106,23 +117,37 @@ exports.registerCourse = (req, res, next) => {
             }
         }
 
-        student.registeredCourses.push(...uniqueRequestedCourses);
+        const newRegisteredCourses = [...student.registeredCourses, ...uniqueRequestedCourses];
         
-        uniqueRequestedCourses.forEach(code => {
-            const course = db.courses.find(c => c.code === code);
-            db.logs.unshift({
-                studentId: student.studentId,
-                studentName: student.name,
-                courseCode: code,
-                courseName: course ? course.name : code,
-                timestamp: new Date().toISOString()
+        await prisma.$transaction(async (tx) => {
+            for (const code of uniqueRequestedCourses) {
+                await tx.course.update({
+                    where: { code },
+                    data: { capacity: { decrement: 1 } }
+                });
+            }
+            
+            await tx.student.update({
+                where: { universityId },
+                data: { registeredCourses: newRegisteredCourses }
             });
+            
+            const logsData = uniqueRequestedCourses.map(code => {
+                const course = courses.find(c => c.code === code);
+                return {
+                    studentId: student.universityId,
+                    studentName: student.name,
+                    courseCode: code,
+                    courseName: course ? course.name : code
+                };
+            });
+            
+            await tx.adminLog.createMany({ data: logsData });
         });
 
-        db.saveToDisk();
         res.status(200).json({
             success: true,
-            data: student.registeredCourses,
+            data: newRegisteredCourses,
             message: "Courses registered successfully"
         });
     } catch (error) {
@@ -130,10 +155,10 @@ exports.registerCourse = (req, res, next) => {
     }
 };
 
-exports.unregisterCourse = (req, res, next) => {
+exports.unregisterCourse = async (req, res, next) => {
     try {
         const { universityId, courseCode } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
 
         if (!student) {
             const err = new Error('Student not found');
@@ -146,11 +171,24 @@ exports.unregisterCourse = (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
-        student.registeredCourses.splice(courseIndex, 1);
-        db.saveToDisk();
+        const updatedRegisteredCourses = [...student.registeredCourses];
+        updatedRegisteredCourses.splice(courseIndex, 1);
+
+        await prisma.$transaction(async (tx) => {
+            await tx.student.update({
+                where: { universityId },
+                data: { registeredCourses: updatedRegisteredCourses }
+            });
+            
+            await tx.course.update({
+                where: { code: courseCode },
+                data: { capacity: { increment: 1 } }
+            });
+        });
+
         res.status(200).json({ 
             success: true, 
-            data: { updatedRegisteredCourses: student.registeredCourses },
+            data: { updatedRegisteredCourses },
             message: 'Course removed successfully'
         });
     } catch (error) {
@@ -158,10 +196,10 @@ exports.unregisterCourse = (req, res, next) => {
     }
 };
 
-exports.getTimetable = (req, res, next) => {
+exports.getTimetable = async (req, res, next) => {
     try {
         const { universityId } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
 
         if (!student) {
             const err = new Error('Student not found');
@@ -169,8 +207,9 @@ exports.getTimetable = (req, res, next) => {
             return next(err);
         }
 
+        const courses = await prisma.course.findMany();
         const timetable = student.registeredCourses.map((code, index) => {
-            const course = db.courses.find(c => c.code === code);
+            const course = courses.find(c => c.code === code);
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
             return {
                 courseCode: course ? course.code : code,
@@ -191,10 +230,10 @@ exports.getTimetable = (req, res, next) => {
     }
 };
 
-exports.getProfile = (req, res, next) => {
+exports.getProfile = async (req, res, next) => {
     try {
         const { universityId } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
 
         if (!student) {
             const err = new Error('Student not found');
@@ -216,7 +255,7 @@ exports.getProfile = (req, res, next) => {
                 email: student.email,
                 yearOfStudy: yearMapping[level] || "Unknown",
                 department: student.department,
-                studentId: student.studentId,
+                studentId: student.universityId,
                 gpa: student.gpa
             },
             message: "Profile fetched successfully"
@@ -226,18 +265,23 @@ exports.getProfile = (req, res, next) => {
     }
 };
 
-exports.getGrades = (req, res, next) => {
+exports.getGrades = async (req, res, next) => {
     try {
         const { universityId } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
 
         if (!student) {
             const err = new Error('Student not found');
             err.statusCode = 404; return next(err);
         }
 
-        const grades = student.academicHistory.map(history => {
-            const course = db.courses.find(c => c.code === history.courseCode);
+        const courses = await prisma.course.findMany();
+        
+        const academicHistory = (typeof student.academicHistory === 'string') ? JSON.parse(student.academicHistory) : student.academicHistory;
+        const historyArray = academicHistory || [];
+
+        const grades = historyArray.map(history => {
+            const course = courses.find(c => c.code === history.courseCode);
             return {
                 courseName: course ? course.name : history.courseCode,
                 semester: history.semester,
@@ -256,20 +300,21 @@ exports.getGrades = (req, res, next) => {
     }
 };
 
-exports.getDashboard = (req, res, next) => {
+exports.getDashboard = async (req, res, next) => {
     try {
         const { universityId } = req.body;
-        const student = db.students.find(s => s.studentId === universityId);
+        const student = await prisma.student.findUnique({ where: { universityId } });
 
         if (!student) {
             const err = new Error('Student not found');
             err.statusCode = 404; return next(err);
         }
 
+        const courses = await prisma.course.findMany();
         const availableHours = getGpaMaxHours(student.gpa);
 
         const registeredCoursesDetails = student.registeredCourses.map(code => {
-            const course = db.courses.find(c => c.code === code);
+            const course = courses.find(c => c.code === code);
             return {
                 code: code,
                 courseName: course ? course.name : code,
