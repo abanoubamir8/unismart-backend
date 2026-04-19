@@ -80,7 +80,7 @@ exports.createStudent = async (req, res, next) => {
                 gpa: gpa !== undefined ? parseFloat(gpa) : 0.0,
                 passedHours: passedHours !== undefined ? parseInt(passedHours, 10) : 0,
                 department: department || "General",
-                year: year !== undefined ? parseInt(year, 10) : 1,
+                year: year ? String(year) : "First",
                 registeredCourses: Array.isArray(registeredCourses) ? registeredCourses : [],
                 academicHistory: academicHistory || []
             },
