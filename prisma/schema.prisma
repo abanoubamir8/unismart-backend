@@ -11,10 +11,11 @@ model Student {
   universityId      String   @id
   name              String
   password          String
-  email             String?
+  email             String?  @unique
   gpa               Float    @default(0.0)
   passedHours       Int      @default(0)
   department        String   @default("General")
+  year              Int      @default(1)
   registeredCourses String[]
   academicHistory   Json?    @default("[]")
 }

@@ -1,4 +1,5 @@
 const prisma = require('../prisma');
+const bcrypt = require('bcrypt');
 
 exports.getStats = async (req, res, next) => {
     try {
@@ -43,6 +44,7 @@ exports.getStudents = async (req, res, next) => {
                 gpa: true,
                 passedHours: true,
                 department: true,
+                year: true,
                 registeredCourses: true,
                 academicHistory: true
             }
@@ -59,23 +61,26 @@ exports.getStudents = async (req, res, next) => {
 
 exports.createStudent = async (req, res, next) => {
     try {
-        const { studentId, name, password, email, gpa, passedHours, department, registeredCourses, academicHistory } = req.body;
-        const exists = await prisma.student.findUnique({ where: { universityId: studentId } });
-        if (exists) {
-            const err = new Error("Student ID already exists");
-            err.statusCode = 400; err.errorCode = "DUPLICATE_ID";
+        const { studentId, name, password, email, gpa, passedHours, department, year, registeredCourses, academicHistory } = req.body;
+        
+        if (!password) {
+            const err = new Error("Password is required");
+            err.statusCode = 400; 
             return next(err);
         }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const newStudent = await prisma.student.create({
             data: { 
                 universityId: studentId,
                 name,
-                password,
+                password: hashedPassword,
                 email,
                 gpa: gpa || 0,
                 passedHours: passedHours || 0,
                 department: department || "General",
+                year: year || 1,
                 registeredCourses: registeredCourses || [],
                 academicHistory: academicHistory || []
             },
@@ -86,6 +91,7 @@ exports.createStudent = async (req, res, next) => {
                 gpa: true,
                 passedHours: true,
                 department: true,
+                year: true,
                 registeredCourses: true,
                 academicHistory: true
             }
@@ -97,6 +103,13 @@ exports.createStudent = async (req, res, next) => {
             message: "Student created successfully"
         });
     } catch (error) {
+        if (error.code === 'P2002') {
+            const duplicateField = error.meta && error.meta.target ? error.meta.target.join(', ') : 'field';
+            const err = new Error(`Student with this ${duplicateField} already exists`);
+            err.statusCode = 400;
+            err.errorCode = 'DUPLICATE_ENTRY';
+            return next(err);
+        }
         next(error);
     }
 };
@@ -110,7 +123,7 @@ exports.updateStudent = async (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
-        const allowedFields = ['name', 'email', 'password', 'gpa', 'passedHours', 'department', 'registeredCourses', 'academicHistory'];
+        const allowedFields = ['name', 'email', 'password', 'gpa', 'passedHours', 'department', 'year', 'registeredCourses', 'academicHistory'];
         const updateData = {};
         for (const key of allowedFields) {
             if (req.body[key] !== undefined) updateData[key] = req.body[key];
@@ -126,6 +139,7 @@ exports.updateStudent = async (req, res, next) => {
                 gpa: true,
                 passedHours: true,
                 department: true,
+                year: true,
                 registeredCourses: true,
                 academicHistory: true
             }
