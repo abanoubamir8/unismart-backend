@@ -73,15 +73,15 @@ exports.createStudent = async (req, res, next) => {
 
         const newStudent = await prisma.student.create({
             data: { 
-                universityId: studentId,
-                name,
+                universityId: studentId ? String(studentId) : undefined,
+                name: name ? String(name) : undefined,
                 password: hashedPassword,
-                email,
-                gpa: gpa || 0,
-                passedHours: passedHours || 0,
+                email: email ? String(email) : null,
+                gpa: gpa !== undefined ? parseFloat(gpa) : 0.0,
+                passedHours: passedHours !== undefined ? parseInt(passedHours, 10) : 0,
                 department: department || "General",
-                year: year || 1,
-                registeredCourses: registeredCourses || [],
+                year: year !== undefined ? parseInt(year, 10) : 1,
+                registeredCourses: Array.isArray(registeredCourses) ? registeredCourses : [],
                 academicHistory: academicHistory || []
             },
             select: {
@@ -103,6 +103,7 @@ exports.createStudent = async (req, res, next) => {
             message: "Student created successfully"
         });
     } catch (error) {
+        console.error("Add Student Error Details:", error);
         if (error.code === 'P2002') {
             const duplicateField = error.meta && error.meta.target ? error.meta.target.join(', ') : 'field';
             const err = new Error(`Student with this ${duplicateField} already exists`);
