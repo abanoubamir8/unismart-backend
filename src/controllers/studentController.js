@@ -32,7 +32,11 @@ exports.getAvailableCourses = async (req, res, next) => {
                 lockReason = `Semester Level ${course.level} Required`;
             }
 
-            for (const prereqCode of course.prerequisites) {
+            const prereqsArray = typeof course.prerequisites === 'string' && course.prerequisites.trim() !== '' 
+                ? course.prerequisites.split(',').map(s => s.trim()) 
+                : (Array.isArray(course.prerequisites) ? course.prerequisites : []);
+
+            for (const prereqCode of prereqsArray) {
                 if (!passedCodes.includes(prereqCode)) {
                     isLocked = true;
                     const prereqCourse = courses.find(c => c.code === prereqCode);
@@ -112,7 +116,11 @@ exports.registerCourse = async (req, res, next) => {
                     err.statusCode = 400; throw err;
                 }
 
-                for (const prereqCode of course.prerequisites) {
+                const prereqsArray = typeof course.prerequisites === 'string' && course.prerequisites.trim() !== '' 
+                    ? course.prerequisites.split(',').map(s => s.trim()) 
+                    : (Array.isArray(course.prerequisites) ? course.prerequisites : []);
+
+                for (const prereqCode of prereqsArray) {
                     if (!passedCodes.includes(prereqCode)) {
                         const prereqCourse = courses.find(c => c.code === prereqCode);
                         const prereqName = prereqCourse ? prereqCourse.name : prereqCode;
@@ -327,7 +335,7 @@ exports.getDashboard = async (req, res, next) => {
             return {
                 code: code,
                 courseName: course ? course.name : code,
-                hours: course ? course.credits : 3,
+                hours: course ? course.creditHours : 3,
                 professor: course ? course.professor : 'TBA',
                 action: 'Delete'
             };

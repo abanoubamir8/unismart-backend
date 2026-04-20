@@ -23,11 +23,12 @@ model Student {
 model Course {
   code          String   @id
   name          String
-  credits       Int
+ creditHours Int @default(3)
   level         Int
-  prerequisites String[]
+  prerequisites String   @default("")
   professor     String   @default("TBA")
   capacity      Int      @default(60)
+  enrolled      Int      @default(0)
   status        String   @default("Available")
 }
 
