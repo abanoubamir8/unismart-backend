@@ -199,17 +199,18 @@ exports.getCourses = async (req, res, next) => {
 
 exports.createCourse = async (req, res, next) => {
     try {
-        const { code, name, credits, level, prerequisites, professor, capacity, status } = req.body;
+        const { code, name, creditHours, level, prerequisites, professor, capacity, enrolled, status } = req.body;
         const newCourse = await prisma.course.create({
             data: { 
-                code,
-                name,
-                credits,
-                level,
-                prerequisites: prerequisites || [],
-                professor: professor || "TBA",
-                capacity: capacity || 60, 
-                status: status || 'Available'
+                code: code ? String(code) : undefined,
+                name: name ? String(name) : undefined,
+                creditHours: creditHours !== undefined ? parseInt(creditHours, 10) : undefined,
+                level: level !== undefined ? parseInt(level, 10) : undefined,
+                prerequisites: prerequisites !== undefined ? String(prerequisites) : "",
+                professor: professor ? String(professor) : "TBA",
+                capacity: capacity !== undefined ? parseInt(capacity, 10) : 60,
+                enrolled: enrolled !== undefined ? parseInt(enrolled, 10) : 0,
+                status: status ? String(status) : 'Available'
             }
         });
         
@@ -219,6 +220,7 @@ exports.createCourse = async (req, res, next) => {
             message: "Course created successfully"
         });
     } catch (error) {
+        console.error("Add Course Error Details:", error);
         next(error);
     }
 };
@@ -232,7 +234,7 @@ exports.updateCourse = async (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
-        const allowedCourseFields = ['name', 'credits', 'level', 'prerequisites', 'professor', 'capacity', 'status'];
+        const allowedCourseFields = ['name', 'creditHours', 'level', 'prerequisites', 'professor', 'capacity', 'enrolled', 'status'];
         const updateCourseData = {};
         for (const key of allowedCourseFields) {
             if (req.body[key] !== undefined) updateCourseData[key] = req.body[key];
