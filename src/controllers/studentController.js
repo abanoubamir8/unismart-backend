@@ -348,24 +348,40 @@ exports.getDashboard = async (req, res, next) => {
         }
 
         const courses = await prisma.course.findMany();
-        const availableHours = getGpaMaxHours(student.gpa);
+        
+        const maxAllowedHours = getGpaMaxHours(student.gpa);
+        let registeredHours = 0;
 
         const registeredCoursesDetails = student.registeredCourses.map(code => {
             const course = courses.find(c => c.code === code);
+            const hours = course ? course.creditHours : 3;
+            registeredHours += hours;
             return {
                 code: code,
                 courseName: course ? course.name : code,
-                hours: course ? course.creditHours : 3,
+                hours: hours,
                 professor: course ? course.professor : 'TBA',
                 action: 'Delete'
             };
         });
 
+        const remainingHours = maxAllowedHours - registeredHours;
+
         res.status(200).json({
             success: true,
             data: {
+                student: {
+                    gpa: student.gpa,
+                    passedHours: student.passedHours,
+                    maxAllowedHours,
+                    registeredHours,
+                    remainingHours,
+                },
                 gpa: student.gpa,
-                availableHours,
+                availableHours: maxAllowedHours,
+                maxAllowedHours,
+                registeredHours,
+                remainingHours,
                 passedHours: student.passedHours,
                 registeredCoursesCount: student.registeredCourses.length,
                 registeredCoursesDetails
