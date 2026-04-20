@@ -92,6 +92,26 @@ exports.registerCourse = async (req, res, next) => {
                 .filter(h => h.recognition !== 'F' && h.grade >= 50)
                 .map(h => h.courseCode);
             const studentLevel = calculateLevel(student.passedHours);
+            const maxAllowedHours = getGpaMaxHours(student.gpa);
+
+            let currentTotalHours = student.registeredCourses.reduce((sum, code) => {
+                const c = courses.find(course => course.code === code);
+                return sum + (c ? c.creditHours : 0);
+            }, 0);
+
+            let newRequestedHours = uniqueRequestedCourses.reduce((sum, code) => {
+                const c = courses.find(course => course.code === code);
+                if (!c) {
+                    const err = new Error(`Course ${code} not found`);
+                    err.statusCode = 404; throw err;
+                }
+                return sum + c.creditHours;
+            }, 0);
+
+            if (currentTotalHours + newRequestedHours > maxAllowedHours) {
+                const err = new Error(`لا يمكنك تسجيل هذه المادة، لقد تجاوزت الحد الأقصى للساعات المتاحة (${maxAllowedHours} ساعة).`);
+                err.statusCode = 400; throw err;
+            }
 
             for (const courseCode of uniqueRequestedCourses) {
                 const course = courses.find(c => c.code === courseCode);
