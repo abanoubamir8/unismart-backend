@@ -37,19 +37,22 @@ async function main() {
 
   // Seed Courses
   for (const course of courses) {
+    const courseData = {
+      code: course.code,
+      name: course.name,
+      creditHours: course.creditHours,
+      level: course.level,
+      term: course.term || 1,
+      prerequisites: course.prerequisites || "",
+      professor: course.professor || "TBA",
+      capacity: course.capacity || 60,
+      status: course.status || "Available"
+    };
+
     await prisma.course.upsert({
       where: { code: course.code },
-      update: {},
-      create: {
-        code: course.code,
-        name: course.name,
-        credits: course.credits,
-        level: course.level,
-        prerequisites: course.prerequisites || [],
-        professor: course.professor || "TBA",
-        capacity: course.capacity || 60,
-        status: course.status || "Available"
-      }
+      update: courseData,
+      create: courseData
     });
   }
   console.log(`Seeded ${courses.length} courses.`);
