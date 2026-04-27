@@ -60,20 +60,23 @@ async function main() {
 
   // Seed Students
   for (const student of students) {
+    const studentData = {
+      universityId: student.studentId,
+      name: student.name,
+      password: student.password,
+      email: student.email,
+      gpa: student.gpa,
+      passedHours: student.passedHours,
+      year: String(student.year || "First"),
+      department: student.department || "General",
+      registeredCourses: student.registeredCourses || [],
+      academicHistory: student.academicHistory || []
+    };
+
     await prisma.student.upsert({
       where: { universityId: student.studentId },
-      update: {},
-      create: {
-        universityId: student.studentId,
-        name: student.name,
-        password: student.password,
-        email: student.email,
-        gpa: student.gpa,
-        passedHours: student.passedHours,
-        department: student.department || 'General',
-        registeredCourses: student.registeredCourses || [],
-        academicHistory: student.academicHistory || []
-      }
+      update: studentData,
+      create: studentData
     });
   }
   console.log(`Seeded ${students.length} students.`);

@@ -1,0 +1,45 @@
+[
+  {
+    "studentId": "2026111",
+    "name": "أحمد (مستوى أول - عام)",
+    "password": "password123",
+    "email": "freshman@unismart.edu",
+    "gpa": 0,
+    "passedHours": 0,
+    "year": "1",
+    "department": "General",
+    "registeredCourses": [],
+    "academicHistory": []
+  },
+  {
+    "studentId": "2026333",
+    "name": "محمود (مستوى ثالث - علوم حاسب)",
+    "password": "password123",
+    "email": "cs_junior@unismart.edu",
+    "gpa": 3.4,
+    "passedHours": 72,
+    "year": "3",
+    "department": "CS",
+    "registeredCourses": [],
+    "academicHistory": [
+      {"courseCode": "CS111", "grade": 85, "recognition": "B"},
+      {"courseCode": "CS112", "grade": 88, "recognition": "B"},
+      {"courseCode": "CS212", "grade": 90, "recognition": "A"}
+    ]
+  },
+  {
+    "studentId": "2026444",
+    "name": "سارة (مستوى رابع - هندسة برمجيات)",
+    "password": "password123",
+    "email": "se_senior@unismart.edu",
+    "gpa": 3.8,
+    "passedHours": 108,
+    "year": "4",
+    "department": "SE",
+    "registeredCourses": [],
+    "academicHistory": [
+       {"courseCode": "SE211", "grade": 92, "recognition": "A"},
+       {"courseCode": "SE311", "grade": 90, "recognition": "A"}
+    ]
+  }
+]

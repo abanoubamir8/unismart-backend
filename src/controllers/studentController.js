@@ -11,11 +11,17 @@ exports.getAvailableCourses = async (req, res, next) => {
             return next(err);
         }
 
-        const { term } = req.query;
-        let whereClause = {};
-        if (term) {
-            whereClause.term = parseInt(term, 10);
-        }
+        const term = parseInt(req.query.term, 10) || 1;
+        const studentLevel = parseInt(student.year, 10) || calculateLevel(student.passedHours);
+        
+        const whereClause = {
+            level: studentLevel,
+            term: term,
+            OR: [
+                { department: student.department },
+                { department: 'General' }
+            ]
+        };
 
         const courses = await prisma.course.findMany({ where: whereClause });
         
@@ -23,8 +29,6 @@ exports.getAvailableCourses = async (req, res, next) => {
         const passedCodes = (academicHistory || [])
             .filter(h => h.recognition !== 'F' && h.grade >= 50)
             .map(h => h.courseCode);
-            
-        const studentLevel = calculateLevel(student.passedHours);
 
         const suggested = courses.map(course => {
             if (passedCodes.includes(course.code)) return null;
