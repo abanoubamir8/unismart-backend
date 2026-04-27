@@ -92,7 +92,7 @@ exports.registerCourse = async (req, res, next) => {
                 .filter(h => h.recognition !== 'F' && h.grade >= 50)
                 .map(h => h.courseCode);
             const studentLevel = calculateLevel(student.passedHours);
-            const maxAllowedHours = getGpaMaxHours(student.gpa);
+            const maxAllowedHours = getGpaMaxHours(student.gpa, student.year);
 
             let currentTotalHours = student.registeredCourses.reduce((sum, code) => {
                 const c = courses.find(course => course.code === code);
@@ -349,7 +349,7 @@ exports.getDashboard = async (req, res, next) => {
 
         const courses = await prisma.course.findMany();
         
-        const maxAllowedHours = getGpaMaxHours(student.gpa);
+        const maxAllowedHours = getGpaMaxHours(student.gpa, student.year);
         let registeredHours = 0;
 
         const registeredCoursesDetails = student.registeredCourses.map(code => {
@@ -371,12 +371,14 @@ exports.getDashboard = async (req, res, next) => {
             success: true,
             data: {
                 student: {
+                    name: student.name,
                     gpa: student.gpa,
                     passedHours: student.passedHours,
                     maxAllowedHours,
                     registeredHours,
                     remainingHours,
                 },
+                name: student.name,
                 gpa: student.gpa,
                 availableHours: maxAllowedHours,
                 maxAllowedHours,
