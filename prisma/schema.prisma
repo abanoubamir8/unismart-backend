@@ -25,6 +25,7 @@ model Course {
   name          String
  creditHours Int @default(3)
   level         Int
+  term          Int      @default(1)
   prerequisites String   @default("")
   professor     String   @default("TBA")
   capacity      Int      @default(60)

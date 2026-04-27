@@ -226,10 +226,13 @@ exports.deleteStudent = async (req, res, next) => {
 
 exports.getCourses = async (req, res, next) => {
     try {
-        const { level } = req.query;
+        const { level, term } = req.query;
         let whereClause = {};
         if (level) {
             whereClause.level = parseInt(level, 10);
+        }
+        if (term) {
+            whereClause.term = parseInt(term, 10);
         }
 
         const courses = await prisma.course.findMany({ where: whereClause });
@@ -252,13 +255,14 @@ exports.getCourses = async (req, res, next) => {
 
 exports.createCourse = async (req, res, next) => {
     try {
-        const { code, name, creditHours, level, prerequisites, professor, capacity, enrolled, status } = req.body;
+        const { code, name, creditHours, level, term, prerequisites, professor, capacity, enrolled, status } = req.body;
         const newCourse = await prisma.course.create({
             data: {
                 code: code ? String(code) : undefined,
                 name: name ? String(name) : undefined,
                 creditHours: creditHours !== undefined ? parseInt(creditHours, 10) : undefined,
                 level: level !== undefined ? parseInt(level, 10) : undefined,
+                term: term !== undefined ? parseInt(term, 10) : 1,
                 prerequisites: prerequisites !== undefined ? String(prerequisites) : "",
                 professor: professor ? String(professor) : "TBA",
                 capacity: capacity !== undefined ? parseInt(capacity, 10) : 60,
@@ -287,7 +291,7 @@ exports.updateCourse = async (req, res, next) => {
             err.statusCode = 404; return next(err);
         }
 
-        const allowedCourseFields = ['name', 'creditHours', 'level', 'prerequisites', 'professor', 'capacity', 'enrolled', 'status'];
+        const allowedCourseFields = ['name', 'creditHours', 'level', 'term', 'prerequisites', 'professor', 'capacity', 'enrolled', 'status'];
         const updateCourseData = {};
         for (const key of allowedCourseFields) {
             if (req.body[key] !== undefined) updateCourseData[key] = req.body[key];

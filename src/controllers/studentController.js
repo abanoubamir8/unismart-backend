@@ -11,7 +11,13 @@ exports.getAvailableCourses = async (req, res, next) => {
             return next(err);
         }
 
-        const courses = await prisma.course.findMany();
+        const { term } = req.query;
+        let whereClause = {};
+        if (term) {
+            whereClause.term = parseInt(term, 10);
+        }
+
+        const courses = await prisma.course.findMany({ where: whereClause });
         
         const academicHistory = (typeof student.academicHistory === 'string') ? JSON.parse(student.academicHistory) : student.academicHistory;
         const passedCodes = (academicHistory || [])
