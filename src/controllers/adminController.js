@@ -154,8 +154,24 @@ exports.updateStudent = async (req, res, next) => {
 
             const passedCodesBefore = typeof exists.academicHistory === 'string' ? JSON.parse(exists.academicHistory) : (exists.academicHistory || []);
             const allPassed = newHistory.filter(h => h.grade >= 50 && h.recognition !== 'F').map(h => h.courseCode);
+            
+            let currentRegisteredCourses = updateData.registeredCourses || exists.registeredCourses || [];
 
             for (const record of newHistory) {
+                const oldRecord = passedCodesBefore.find(h => h.courseCode === record.courseCode);
+                const isNewOrUpdated = !oldRecord || oldRecord.grade !== record.grade;
+
+                if (isNewOrUpdated) {
+                    if (!currentRegisteredCourses.includes(record.courseCode)) {
+                        const err = new Error('خطأ أمني: لا يمكن تقييم الطالب في مقرر غير مسجل به حالياً.');
+                        err.statusCode = 400;
+                        err.success = false;
+                        return next(err);
+                    }
+                    // Remove course from registeredCourses since it is now graded
+                    currentRegisteredCourses = currentRegisteredCourses.filter(c => c !== record.courseCode);
+                }
+
                 if (record.grade >= 50 && record.recognition !== 'F') {
                     const course = courses.find(c => c.code === record.courseCode);
                     if (course) {
@@ -175,6 +191,7 @@ exports.updateStudent = async (req, res, next) => {
                 }
             }
             updateData.academicHistory = newHistory;
+            updateData.registeredCourses = currentRegisteredCourses;
         }
 
         const updatedStudent = await prisma.student.update({
@@ -318,6 +335,18 @@ exports.updateCourse = async (req, res, next) => {
                     }
                 } else if (updateCourseData.status === 'ممتلئ' || updateCourseData.status === 'ممتلئة') {
                     updateCourseData.enrolled = updateCourseData.capacity !== undefined ? updateCourseData.capacity : exists.capacity;
+                }
+            }
+
+            const newCapacity = updateCourseData.capacity !== undefined ? updateCourseData.capacity : exists.capacity;
+            const currentEnrolled = updateCourseData.enrolled !== undefined ? updateCourseData.enrolled : exists.enrolled;
+            const currentStatus = updateCourseData.status !== undefined ? updateCourseData.status : exists.status;
+
+            if (currentStatus !== 'مغلق' && currentStatus !== 'فارغ') {
+                if (currentEnrolled >= newCapacity) {
+                    updateCourseData.status = 'ممتلئ';
+                } else if (currentEnrolled < newCapacity && (currentStatus === 'ممتلئ' || currentStatus === 'ممتلئة')) {
+                    updateCourseData.status = 'متاح';
                 }
             }
 

@@ -125,7 +125,7 @@ exports.registerCourse = async (req, res, next) => {
                     const err = new Error(`Course ${courseCode} not found`);
                     err.statusCode = 404; throw err;
                 }
-                if (course.capacity <= 0) {
+                if (course.status === 'ممتلئ' || course.status === 'ممتلئة' || course.enrolled >= course.capacity) {
                     const err = new Error(`Course ${courseCode} is fully booked.`);
                     err.statusCode = 400; throw err;
                 }
@@ -160,10 +160,16 @@ exports.registerCourse = async (req, res, next) => {
             const updatedRegisteredCourses = [...student.registeredCourses, ...uniqueRequestedCourses];
             
             for (const code of uniqueRequestedCourses) {
-                await tx.course.update({
+                const updatedCourse = await tx.course.update({
                     where: { code },
-                    data: { capacity: { decrement: 1 } }
+                    data: { enrolled: { increment: 1 } }
                 });
+                if (updatedCourse.enrolled >= updatedCourse.capacity && updatedCourse.status !== 'مغلق' && updatedCourse.status !== 'ممتلئ' && updatedCourse.status !== 'ممتلئة') {
+                    await tx.course.update({
+                        where: { code },
+                        data: { status: 'ممتلئ' }
+                    });
+                }
             }
             
             await tx.student.update({
@@ -223,10 +229,17 @@ exports.unregisterCourse = async (req, res, next) => {
                 data: { registeredCourses: updatedRegisteredCourses }
             });
             
-            await tx.course.update({
+            const updatedCourse = await tx.course.update({
                 where: { code: courseCode },
-                data: { capacity: { increment: 1 } }
+                data: { enrolled: { decrement: 1 } }
             });
+            
+            if (updatedCourse.enrolled < updatedCourse.capacity && (updatedCourse.status === 'ممتلئ' || updatedCourse.status === 'ممتلئة')) {
+                await tx.course.update({
+                    where: { code: courseCode },
+                    data: { status: 'متاح' }
+                });
+            }
         });
 
         res.status(200).json({ 
