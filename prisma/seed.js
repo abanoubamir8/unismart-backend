@@ -46,7 +46,8 @@ async function main() {
       prerequisites: course.prerequisites || "",
       professor: course.professor || "TBA",
       capacity: course.capacity || 60,
-      status: course.status || "Available"
+      status: course.status || "Available",
+      department: course.department || "General"
     };
 
     await prisma.course.upsert({
